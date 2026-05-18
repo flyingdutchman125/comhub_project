@@ -1,4 +1,9 @@
 ﻿import { useState, useEffect } from 'react'
+import { useAuth } from './AuthContext'
+import { LoginForm } from './LoginForm'
+import { RegisterForm } from './RegisterForm'
+import { CommunityCard } from './CommunityCard'
+import { CommunityDetailPage } from './CommunityDetailPage'
 
 const useProjectTracking = () => {
   const STORAGE_KEY = 'comhub_projects'
@@ -11,7 +16,7 @@ const useProjectTracking = () => {
       deadline: '28 Mei 2026',
       status: 'On Track',
       progress: 76,
-      budget: 'Rp 18.000.000',
+      budget: 'Rp 500.000',
     },
     {
       id: 2,
@@ -20,7 +25,7 @@ const useProjectTracking = () => {
       deadline: '4 Juni 2026',
       status: 'At Risk',
       progress: 54,
-      budget: 'Rp 12.500.000',
+      budget: 'Rp 1.500.000',
     },
     {
       id: 3,
@@ -29,7 +34,7 @@ const useProjectTracking = () => {
       deadline: '15 Juni 2026',
       status: 'Planning',
       progress: 32,
-      budget: 'Rp 8.000.000',
+      budget: 'Rp 1.000.000',
     },
   ]
 
@@ -63,17 +68,17 @@ const useProjectTracking = () => {
 }
 
 const sidebarItems = [
-  { label: 'Dashboard', icon: '🏠' },
-  { label: 'Project Tracking', icon: '📊' },
-  { label: 'Financial', icon: '💰' },
-  { label: 'Member', icon: '👥' },
-  { label: 'Settings', icon: '⚙️' },
+  { label: 'Dashboard' },
+  { label: 'Project Tracking' },
+  { label: 'Financial' },
+  { label: 'Member' },
+  { label: 'Settings' },
 ]
 
 const quickStats = [
-  { label: 'Total Komunitas Aktif Saat ini', value: '20', icon: '👥', accent: 'bg-cyan-500/20 text-cyan-300' },
-  { label: 'Program Kerja berjalan', value: '12', icon: '⚡', accent: 'bg-violet-500/20 text-violet-300' },
-  { label: 'Total anggota keseluruhan', value: '450', icon: '👤', accent: 'bg-sky-500/20 text-sky-300' },
+  { label: 'Total Komunitas Aktif Saat ini', value: '20', accent: 'bg-cyan-500/20 text-cyan-300' },
+  { label: 'Program Kerja berjalan', value: '12', accent: 'bg-violet-500/20 text-violet-300' },
+  { label: 'Total anggota keseluruhan', value: '450', accent: 'bg-sky-500/20 text-sky-300' },
 ]
 
 const popularCommunities = [
@@ -109,9 +114,9 @@ const communityInfo = {
 }
 
 const projectTrackingStats = [
-  { label: 'Proyek Aktif', value: '8', icon: '🚧', accent: 'bg-cyan-500/20 text-cyan-300' },
-  { label: 'Selesai Tepat Waktu', value: '5', icon: '✅', accent: 'bg-emerald-500/20 text-emerald-300' },
-  { label: 'Issue Terbuka', value: '3', icon: '⚠️', accent: 'bg-amber-500/20 text-amber-300' },
+  { label: 'Proyek Aktif', value: '8', accent: 'bg-cyan-500/20 text-cyan-300' },
+  { label: 'Selesai Tepat Waktu', value: '5', accent: 'bg-emerald-500/20 text-emerald-300' },
+  { label: 'Issue Terbuka', value: '3', accent: 'bg-amber-500/20 text-amber-300' },
 ]
 
 
@@ -186,7 +191,7 @@ function ProjectTrackingPage({ projects, onAddProject, onUpdateProject, onDelete
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="rounded-[2rem] border border-slate-800 bg-slate-900/90 p-6 shadow-lg shadow-slate-950/20">
           <div className="inline-flex items-center gap-3 rounded-full px-3 py-2 bg-cyan-500/20 text-cyan-300">
-            <span>🚧</span>
+   
             <p className="text-xs uppercase tracking-[0.3em] text-slate-200">Proyek Aktif</p>
           </div>
           <p className="mt-7 text-4xl font-semibold text-white">{activeProjects}</p>
@@ -194,7 +199,7 @@ function ProjectTrackingPage({ projects, onAddProject, onUpdateProject, onDelete
         </div>
         <div className="rounded-[2rem] border border-slate-800 bg-slate-900/90 p-6 shadow-lg shadow-slate-950/20">
           <div className="inline-flex items-center gap-3 rounded-full px-3 py-2 bg-emerald-500/20 text-emerald-300">
-            <span>✅</span>
+        
             <p className="text-xs uppercase tracking-[0.3em] text-slate-200">Selesai Tepat Waktu</p>
           </div>
           <p className="mt-7 text-4xl font-semibold text-white">{onTimeProjects}</p>
@@ -202,7 +207,6 @@ function ProjectTrackingPage({ projects, onAddProject, onUpdateProject, onDelete
         </div>
         <div className="rounded-[2rem] border border-slate-800 bg-slate-900/90 p-6 shadow-lg shadow-slate-950/20">
           <div className="inline-flex items-center gap-3 rounded-full px-3 py-2 bg-amber-500/20 text-amber-300">
-            <span>⚠️</span>
             <p className="text-xs uppercase tracking-[0.3em] text-slate-200">Issue Terbuka</p>
           </div>
           <p className="mt-7 text-4xl font-semibold text-white">{atRiskProjects}</p>
@@ -396,10 +400,90 @@ function ProjectTrackingPage({ projects, onAddProject, onUpdateProject, onDelete
 }
 
 function App() {
+  const [authPage, setAuthPage] = useState('login')
+  const { isAuthenticated, isLoading, user, token, logout } = useAuth()
   const [activeTab, setActiveTab] = useState('Dashboard')
-  const [selectedCommunity, setSelectedCommunity] = useState(popularCommunities[0])
+  const [selectedCommunity, setSelectedCommunity] = useState(null)
+  const [showDetailPage, setShowDetailPage] = useState(false)
+  const [communities, setCommunities] = useState(popularCommunities)
+  const [loadingCommunities, setLoadingCommunities] = useState(false)
   const { projects, addProject, updateProject, deleteProject } = useProjectTracking()
+
+  // Fetch communities from backend when authenticated
+  useEffect(() => {
+    let mounted = true
+    
+    const fetchCommunities = async () => {
+      if (!isAuthenticated || !token) return
+      
+      setLoadingCommunities(true)
+      try {
+        const res = await fetch('http://localhost:3000/api/communities', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+        
+        if (!res.ok) {
+          console.error('Failed to fetch communities')
+          return
+        }
+        
+        const data = await res.json()
+        if (mounted) {
+          setCommunities(Array.isArray(data) ? data : popularCommunities)
+        }
+      } catch (err) {
+        console.error('Error fetching communities:', err)
+        if (mounted) setCommunities(popularCommunities)
+      } finally {
+        if (mounted) setLoadingCommunities(false)
+      }
+    }
+
+    if (isAuthenticated) {
+      fetchCommunities()
+    }
+
+    return () => { mounted = false }
+  }, [isAuthenticated, token])
+
   const pageTitle = activeTab === 'Dashboard' ? 'Modern Dark Community Dashboard' : activeTab === 'Project Tracking' ? 'Project Tracking Overview' : `${activeTab} Page`
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#060b1b] flex items-center justify-center">
+        <div className="text-center">
+          <div className="mb-4 h-12 w-12 rounded-full border-4 border-slate-800 border-t-cyan-500 animate-spin mx-auto" />
+          <p className="text-slate-400">Memuat...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!isAuthenticated) {
+    return authPage === 'login' ? (
+      <LoginForm onSwitchToRegister={() => setAuthPage('register')} onLoginSuccess={() => setActiveTab('Dashboard')} />
+    ) : (
+      <RegisterForm onSwitchToLogin={() => setAuthPage('login')} onRegisterSuccess={() => {
+        setAuthPage('login')
+      }} />
+    )
+  }
+
+  // Show community detail page
+  if (showDetailPage && selectedCommunity) {
+    return (
+      <CommunityDetailPage
+        community={selectedCommunity}
+        token={token}
+        onBack={() => {
+          setShowDetailPage(false)
+          setSelectedCommunity(null)
+        }}
+      />
+    )
+  }
 
   return (
     <div className="min-h-screen bg-[#060b1b] text-slate-100">
@@ -437,9 +521,35 @@ function App() {
             })}
           </nav>
 
-          <div className="mt-auto rounded-[2rem] border border-slate-800 bg-slate-950/20 p-5 shadow-inner shadow-slate-950/10">
-            <p className="text-xs uppercase tracking-[0.3em] text-slate-500 mb-3">Need help?</p>
-            <p className="text-sm text-slate-300 leading-6">Akses pengaturan komunitas dan update fitur kapan saja dari sidebar.</p>
+          <div className="mt-auto space-y-4">
+            {/* User Profile */}
+            <div className="rounded-[2rem] border border-slate-800 bg-slate-950/70 p-4">
+              <div className="flex items-center gap-3">
+                <div className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 text-sm font-bold text-slate-950">
+                  {user?.nama?.charAt(0) || 'U'}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-white truncate">{user?.nama || 'User'}</p>
+                  <p className="text-xs text-slate-400">ID: {user?.id}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Logout Button */}
+            <button
+              onClick={() => {
+                logout()
+                setActiveTab('Dashboard')
+              }}
+              className="w-full rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm font-semibold text-red-400 hover:bg-red-500/20 transition"
+            >
+              Logout
+            </button>
+
+            <div className="rounded-[2rem] border border-slate-800 bg-slate-950/20 p-5 shadow-inner shadow-slate-950/10">
+              <p className="text-xs uppercase tracking-[0.3em] text-slate-500 mb-3">Need help?</p>
+              <p className="text-sm text-slate-300 leading-6">Akses pengaturan komunitas dan update fitur kapan saja dari sidebar.</p>
+            </div>
           </div>
         </aside>
 
@@ -462,7 +572,7 @@ function App() {
               <div className="flex items-center gap-3 rounded-3xl border border-slate-800 bg-slate-900/90 px-4 py-3">
                 <div className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-700 text-lg">AS</div>
                 <div>
-                  <p className="text-sm text-slate-400">Ahmad Syifa’ul</p>
+                  <p className="text-sm text-slate-400">Ahmad Syifaul</p>
                   <p className="text-xs text-slate-500">Admin Community</p>
                 </div>
               </div>
@@ -489,72 +599,30 @@ function App() {
                   <div className="rounded-[2rem] border border-slate-800 bg-slate-900/90 p-6 shadow-lg shadow-slate-950/10">
                     <div className="flex items-center justify-between gap-4">
                       <div>
-                        <h3 className="text-xl font-semibold text-white">Popular Community in This Month</h3>
-                        <p className="text-sm text-slate-500">List komunitas yang paling banyak dikunjungi.</p>
+                        <h3 className="text-xl font-semibold text-white">Daftar Komunitas</h3>
+                        <p className="text-sm text-slate-500">Pilih komunitas untuk melihat detail dan bergabung</p>
                       </div>
-                      <span className="rounded-full bg-slate-800 px-3 py-1 text-xs text-slate-400">Monthly</span>
+                      <span className="rounded-full bg-slate-800 px-3 py-1 text-xs text-slate-400">{communities.length} Komunitas</span>
                     </div>
 
-                    <div className="mt-6 space-y-4">
-                      {popularCommunities.map((community, index) => {
-                        const active = community.name === selectedCommunity.name
-                        return (
-                          <button
-                            key={community.name}
-                            onClick={() => setSelectedCommunity(community)}
-                            className={`w-full rounded-3xl border p-4 text-left transition ${
-                              active
-                                ? 'border-cyan-400/30 bg-slate-800/90 shadow-lg shadow-cyan-500/10'
-                                : 'border-slate-800 bg-slate-950/70 hover:border-slate-600 hover:bg-slate-900'
-                            }`}
-                          >
-                            <div className="flex items-center gap-4">
-                              <div className="h-12 w-12 rounded-3xl bg-slate-800 grid place-items-center text-sm font-semibold text-slate-300">{index + 1}</div>
-                              <div className="flex-1">
-                                <div className="flex items-center justify-between gap-4">
-                                  <h4 className="font-semibold text-white">{community.name}</h4>
-                                  <span className="rounded-full bg-slate-800 px-3 py-1 text-xs text-slate-400">{community.members}</span>
-                                </div>
-                                <p className="mt-2 text-sm text-slate-400">{community.description}</p>
-                              </div>
-                            </div>
-                          </button>
-                        )
-                      })}
-                    </div>
-                  </div>
-
-                  <div className="rounded-[2rem] border border-slate-800 bg-slate-900/90 p-6 shadow-lg shadow-slate-950/10">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="text-xl font-semibold text-white">Info Community</h3>
-                        <p className="text-sm text-slate-500">Ringkasan dan insight komunitas.</p>
+                    {loadingCommunities ? (
+                      <div className="mt-6 flex justify-center">
+                        <div className="h-8 w-8 rounded-full border-2 border-slate-700 border-t-cyan-500 animate-spin" />
                       </div>
-                      <button className="rounded-3xl border border-slate-800 px-4 py-2 text-sm text-slate-300 hover:bg-slate-800">Detail</button>
-                    </div>
-
-                    <div className="mt-6 grid gap-4 sm:grid-cols-3">
-                      {communityInfo.stats.map((stat) => (
-                        <div key={stat.label} className="rounded-3xl border border-slate-800 bg-slate-950/70 p-4 text-center">
-                          <p className="text-3xl font-semibold text-white">{stat.value}</p>
-                          <p className="mt-2 text-sm text-slate-500">{stat.label}</p>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="mt-6 rounded-[2rem] border border-slate-800 bg-slate-950/70 p-5">
-                      <h4 className="font-semibold text-white">{communityInfo.title}</h4>
-                      <p className="mt-3 text-sm leading-6 text-slate-400">{communityInfo.description}</p>
-                    </div>
-
-                    <div className="mt-6 space-y-3">
-                      {communityInfo.notes.map((note) => (
-                        <div key={note} className="flex items-start gap-3 rounded-3xl border border-slate-800 bg-slate-900/90 p-4">
-                          <span className="mt-1 h-2.5 w-2.5 rounded-full bg-cyan-400" />
-                          <p className="text-sm text-slate-400">{note}</p>
-                        </div>
-                      ))}
-                    </div>
+                    ) : (
+                      <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                        {communities.map((community) => (
+                          <CommunityCard
+                            key={community.name || community.id}
+                            community={community}
+                            onSelect={(c) => {
+                              setSelectedCommunity(c)
+                              setShowDetailPage(true)
+                            }}
+                          />
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
 

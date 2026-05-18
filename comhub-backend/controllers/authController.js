@@ -77,4 +77,15 @@ const login = async (req, res) => {
     }
 };
 
-module.exports = { register, login };
+// --- FITUR LOGOUT ---
+const logout = async (req, res) => {
+    // Logout di sisi server bisa dilakukan dengan:
+    // 1. Menambahkan token ke blacklist (opsional)
+    // 2. Menghapus session user (jika menggunakan session)
+    // 3. Mengirim respon sukses (client yang menghapus token dari localStorage)
+
+    // Untuk implementasi sederhana, kita hanya mengirim respon sukses
+    res.status(200).json({ message: 'Logout berhasil!' });
+};
+
+module.exports = { register, login, logout };
