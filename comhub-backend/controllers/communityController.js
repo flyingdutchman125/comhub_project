@@ -425,6 +425,79 @@ const getCommunityById = async (req, res) => {
     }
 };
 
+// --- FITUR EKSPOR LAPORAN KOMUNITAS (HANYA KETUA) ---
+const generateReport = async (req, res) => {
+    const communityId = req.params.id;
+    const userId = req.user.id;
+
+    try {
+        // 1. Otorisasi: Hanya Ketua
+        const [checkRole] = await db.query(
+            'SELECT community_role FROM community_members WHERE user_id = ? AND community_id = ? AND status_keanggotaan = "AKTIF"',
+            [userId, communityId]
+        );
+
+        if (checkRole.length === 0 || checkRole[0].community_role !== 'KETUA') {
+            return res.status(403).json({ message: 'Akses ditolak! Hanya Ketua yang bisa mengekspor laporan.' });
+        }
+
+        // 2. Ambil data komunitas
+        const [community] = await db.query('SELECT * FROM communities WHERE id = ?', [communityId]);
+        if (community.length === 0) return res.status(404).json({ message: 'Komunitas tidak ditemukan.' });
+
+        // 3. Ambil anggota aktif
+        const [members] = await db.query(`
+            SELECT u.nama, u.email, cm.community_role, cm.joined_at
+            FROM community_members cm
+            JOIN users u ON cm.user_id = u.id
+            WHERE cm.community_id = ? AND cm.status_keanggotaan = 'AKTIF'
+            ORDER BY cm.community_role, u.nama
+        `, [communityId]);
+
+        // 4. Ambil proyek
+        const [projects] = await db.query(`
+            SELECT nama_proker, deskripsi, anggaran, progress, start_date, end_date
+            FROM projects WHERE community_id = ? ORDER BY created_at DESC
+        `, [communityId]);
+
+        // 5. Ambil transaksi keuangan
+        const [finances] = await db.query(`
+            SELECT type, amount, description, transaction_date
+            FROM finances WHERE community_id = ? ORDER BY transaction_date DESC
+        `, [communityId]);
+
+        // 6. Hitung total keuangan
+        let totalIncome = 0, totalExpense = 0;
+        finances.forEach(f => {
+            if (f.type === 'INCOME') totalIncome += parseFloat(f.amount);
+            else totalExpense += parseFloat(f.amount);
+        });
+
+        res.status(200).json({
+            generated_at: new Date().toISOString(),
+            community: {
+                id: community[0].id,
+                name: community[0].nama_komunitas,
+                description: community[0].deskripsi
+            },
+            summary: {
+                totalMembers: members.length,
+                totalProjects: projects.length,
+                totalIncome,
+                totalExpense,
+                balance: totalIncome - totalExpense
+            },
+            members,
+            projects,
+            finances
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Terjadi kesalahan saat membuat laporan.' });
+    }
+};
+
 // JANGAN LUPA: Update module.exports
 module.exports = {
     createCommunity,
@@ -435,5 +508,6 @@ module.exports = {
     getApplicants,
     approveApplicant,
     assignRole,
-    removeMember
+    removeMember,
+    generateReport
 };

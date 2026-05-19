@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react'
 import Swal from 'sweetalert2'
+import { exportMemberPDF } from './pdfExport'
 
 export function MemberPage({ communityId, token, isReadOnly = false, currentUserRole = null }) {
   const [members, setMembers] = useState([])
   const [applicants, setApplicants] = useState([])
   const [loading, setLoading] = useState(true)
+  const [exporting, setExporting] = useState(false)
+
+  const isKetua = currentUserRole === 'KETUA'
 
   const fetchMembers = async () => {
     try {
@@ -207,6 +211,41 @@ export function MemberPage({ communityId, token, isReadOnly = false, currentUser
     }
   }
 
+  const handleExport = async () => {
+    setExporting(true)
+    try {
+      const res = await fetch(`http://localhost:3000/api/communities/${communityId}/report`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.message || 'Gagal mengambil laporan')
+
+      exportMemberPDF(data)
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Ekspor Berhasil!',
+        text: 'Laporan anggota berhasil diunduh sebagai file PDF.',
+        background: '#0f172a',
+        color: '#fff',
+        confirmButtonColor: '#06b6d4',
+        timer: 2000,
+        showConfirmButton: false
+      })
+    } catch (err) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Gagal Ekspor',
+        text: err.message,
+        background: '#0f172a',
+        color: '#fff',
+        confirmButtonColor: '#06b6d4'
+      })
+    } finally {
+      setExporting(false)
+    }
+  }
+
   const getRoleColor = (role) => {
     switch (role) {
       case 'KETUA': return 'bg-amber-500/20 text-amber-300'
@@ -222,12 +261,24 @@ export function MemberPage({ communityId, token, isReadOnly = false, currentUser
   return (
     <section className="mt-8">
       <div className="rounded-[2rem] border border-slate-800 bg-slate-900/90 p-6">
-        <div>
-          <h3 className="text-xl font-semibold text-white">Anggota Komunitas</h3>
-          <p className="text-sm text-slate-500">Daftar anggota dan jabatan mereka dalam komunitas</p>
-          {isReadOnly && <p className="text-xs text-amber-400 mt-2">📌 Mode Read-Only</p>}
+        <div className="flex items-center justify-between gap-4 flex-wrap mb-6">
+          <div>
+            <h3 className="text-xl font-semibold text-white">Anggota Komunitas</h3>
+            <p className="text-sm text-slate-500">Daftar anggota dan jabatan mereka dalam komunitas</p>
+            {isReadOnly && <p className="text-xs text-amber-400 mt-2">📌 Mode Read-Only</p>}
+          </div>
+          {isKetua && (
+            <button
+              onClick={handleExport}
+              disabled={exporting}
+              className="rounded-3xl border border-emerald-500/30 bg-emerald-500/10 px-5 py-3 text-sm font-medium text-emerald-200 transition hover:bg-emerald-500/20 disabled:opacity-50 flex items-center gap-2"
+            >
+              <span>📥</span>
+              {exporting ? 'Mengekspor...' : 'Ekspor Laporan'}
+            </button>
+          )}
         </div>
-        <div className="mt-6 overflow-x-auto">
+        <div className="overflow-x-auto">
           <table className="min-w-full border-separate border-spacing-0 text-sm">
             <thead><tr className="text-left text-slate-400">
               <th className="pb-4 pr-6">Nama</th>

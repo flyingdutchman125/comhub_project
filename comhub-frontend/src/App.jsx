@@ -364,9 +364,9 @@ function App() {
               </section>
             </>
           ) : activeTab === 'Project Tracking' && selectedCommunity ? (
-            <ProjectTrackingPage communityId={selectedCommunity.id} token={token} isReadOnly={isReadOnly} />
+            <ProjectTrackingPage communityId={selectedCommunity.id} token={token} isReadOnly={isReadOnly} currentUserRole={userRoleInSelected} />
           ) : activeTab === 'Financial' && selectedCommunity ? (
-            <FinancialPage communityId={selectedCommunity.id} token={token} isReadOnly={isReadOnly} />
+            <FinancialPage communityId={selectedCommunity.id} token={token} isReadOnly={isReadOnly} currentUserRole={userRoleInSelected} />
           ) : activeTab === 'Member' && selectedCommunity ? (
             <MemberPage communityId={selectedCommunity.id} token={token} isReadOnly={isReadOnly} currentUserRole={userRoleInSelected} />
           ) : activeTab === 'Kotak Pesan' ? (

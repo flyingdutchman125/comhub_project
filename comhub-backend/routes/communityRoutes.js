@@ -10,7 +10,8 @@ const {
     getApplicants,
     approveApplicant,
     assignRole,
-    removeMember
+    removeMember,
+    generateReport
 } = require('../controllers/communityController');
 const { verifyToken } = require('../middleware/authMiddleware');
 
@@ -33,5 +34,8 @@ router.put('/:id/members/:userId/role', verifyToken, assignRole);
 
 // Endpoint untuk menghapus anggota (DELETE /api/communities/1/members/2)
 router.delete('/:id/members/:userId', verifyToken, removeMember);
+
+// Endpoint untuk ekspor laporan (GET /api/communities/1/report) - Hanya Ketua
+router.get('/:id/report', verifyToken, generateReport);
 
 module.exports = router;

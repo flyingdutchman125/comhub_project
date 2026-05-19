@@ -1,12 +1,16 @@
 import { useState, useEffect } from 'react'
 import Swal from 'sweetalert2'
+import { exportProjectPDF } from './pdfExport'
 
-export function ProjectTrackingPage({ communityId, token, isReadOnly = false }) {
+export function ProjectTrackingPage({ communityId, token, isReadOnly = false, currentUserRole = null }) {
   const [projects, setProjects] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [formData, setFormData] = useState({ nama_proyek: '', deskripsi: '', anggaran: '', progress: 0, start_date: '', end_date: '' })
+  const [exporting, setExporting] = useState(false)
+
+  const isKetua = currentUserRole === 'KETUA'
 
   const fetchProjects = async () => {
     try {
@@ -124,6 +128,41 @@ export function ProjectTrackingPage({ communityId, token, isReadOnly = false }) 
     }
   }
 
+  const handleExport = async () => {
+    setExporting(true)
+    try {
+      const res = await fetch(`http://localhost:3000/api/communities/${communityId}/report`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.message || 'Gagal mengambil laporan')
+
+      exportProjectPDF(data)
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Ekspor Berhasil!',
+        text: 'Laporan proyek berhasil diunduh sebagai file PDF.',
+        background: '#0f172a',
+        color: '#fff',
+        confirmButtonColor: '#06b6d4',
+        timer: 2000,
+        showConfirmButton: false
+      })
+    } catch (err) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Gagal Ekspor',
+        text: err.message,
+        background: '#0f172a',
+        color: '#fff',
+        confirmButtonColor: '#06b6d4'
+      })
+    } finally {
+      setExporting(false)
+    }
+  }
+
   const getStatusStyle = (status) => {
     if (status === 'On Track' || status === 'Done') return 'bg-emerald-500/10 text-emerald-300'
     if (status === 'At Risk') return 'bg-amber-500/10 text-amber-300'
@@ -141,11 +180,23 @@ export function ProjectTrackingPage({ communityId, token, isReadOnly = false }) 
             <p className="text-sm text-slate-500">Lihat progress, deadline, dan status untuk setiap proyek.</p>
             {isReadOnly && <p className="text-xs text-amber-400 mt-2">📌 Mode Read-Only</p>}
           </div>
-          {!isReadOnly && (
-            <button onClick={() => handleOpenForm()} className="rounded-3xl border border-cyan-500/30 bg-cyan-500/10 px-5 py-3 text-sm font-medium text-cyan-200 transition hover:bg-cyan-500/15">
-              Tambah Proyek Baru
-            </button>
-          )}
+          <div className="flex items-center gap-3 flex-wrap">
+            {isKetua && (
+              <button
+                onClick={handleExport}
+                disabled={exporting}
+                className="rounded-3xl border border-emerald-500/30 bg-emerald-500/10 px-5 py-3 text-sm font-medium text-emerald-200 transition hover:bg-emerald-500/20 disabled:opacity-50 flex items-center gap-2"
+              >
+                <span>📥</span>
+                {exporting ? 'Mengekspor...' : 'Ekspor Laporan'}
+              </button>
+            )}
+            {!isReadOnly && (
+              <button onClick={() => handleOpenForm()} className="rounded-3xl border border-cyan-500/30 bg-cyan-500/10 px-5 py-3 text-sm font-medium text-cyan-200 transition hover:bg-cyan-500/15">
+                Tambah Proyek Baru
+              </button>
+            )}
+          </div>
         </div>
         <div className="mt-6 overflow-x-auto">
           <table className="min-w-full border-separate border-spacing-0 text-sm">
@@ -171,7 +222,9 @@ export function ProjectTrackingPage({ communityId, token, isReadOnly = false }) 
                   {!isReadOnly && (
                     <td className="py-4 flex items-center gap-2">
                       <button onClick={() => handleOpenForm(p)} className="rounded-lg px-3 py-1 text-xs font-medium bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 transition">Edit</button>
-                      <button onClick={() => setDeleteConfirm(p.id)} className="rounded-lg px-3 py-1 text-xs font-medium bg-red-500/20 text-red-300 hover:bg-red-500/30 transition">Hapus</button>
+                      {isKetua && (
+                        <button onClick={() => handleDelete(p.id)} className="rounded-lg px-3 py-1 text-xs font-medium bg-red-500/20 text-red-300 hover:bg-red-500/30 transition">Hapus</button>
+                      )}
                     </td>
                   )}
                 </tr>

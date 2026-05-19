@@ -125,8 +125,8 @@ const deleteProject = async (req, res) => {
             [userId, communityId]
         );
 
-        if (checkRole.length === 0 || !['KETUA', 'SEKRETARIS', 'BENDAHARA'].includes(checkRole[0].community_role)) {
-            return res.status(403).json({ message: 'Akses ditolak! Hanya pengurus yang bisa menghapus proyek.' });
+        if (checkRole.length === 0 || checkRole[0].community_role !== 'KETUA') {
+            return res.status(403).json({ message: 'Akses ditolak! Hanya Ketua yang bisa menghapus proyek.' });
         }
 
         // 3. Hapus tasks terkait terlebih dahulu

@@ -1,11 +1,15 @@
 import { useState, useEffect } from 'react'
 import Swal from 'sweetalert2'
+import { exportFinancialPDF } from './pdfExport'
 
-export function FinancialPage({ communityId, token, isReadOnly = false }) {
+export function FinancialPage({ communityId, token, isReadOnly = false, currentUserRole = null }) {
   const [financial, setFinancial] = useState({ totalBudget: 0, spent: 0, remaining: 0, transactions: [] })
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [formData, setFormData] = useState({ type: 'INCOME', amount: '', description: '', transaction_date: '' })
+  const [exporting, setExporting] = useState(false)
+
+  const isKetua = currentUserRole === 'KETUA'
 
   const fetchFinancial = async () => {
     try {
@@ -102,6 +106,41 @@ export function FinancialPage({ communityId, token, isReadOnly = false }) {
     }
   }
 
+  const handleExport = async () => {
+    setExporting(true)
+    try {
+      const res = await fetch(`http://localhost:3000/api/communities/${communityId}/report`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.message || 'Gagal mengambil laporan')
+
+      exportFinancialPDF(data)
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Ekspor Berhasil!',
+        text: 'Laporan keuangan berhasil diunduh sebagai file PDF.',
+        background: '#0f172a',
+        color: '#fff',
+        confirmButtonColor: '#06b6d4',
+        timer: 2000,
+        showConfirmButton: false
+      })
+    } catch (err) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Gagal Ekspor',
+        text: err.message,
+        background: '#0f172a',
+        color: '#fff',
+        confirmButtonColor: '#06b6d4'
+      })
+    } finally {
+      setExporting(false)
+    }
+  }
+
   if (loading) return <div className="flex justify-center py-12"><div className="h-8 w-8 rounded-full border-2 border-slate-700 border-t-cyan-500 animate-spin" /></div>
 
   return (
@@ -122,17 +161,29 @@ export function FinancialPage({ communityId, token, isReadOnly = false }) {
       </div>
 
       <div className="rounded-[2rem] border border-slate-800 bg-slate-900/90 p-6">
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
             <h3 className="text-xl font-semibold text-white">Riwayat Transaksi</h3>
             <p className="text-sm text-slate-500">Catatan pemasukan dan pengeluaran komunitas</p>
             {isReadOnly && <p className="text-xs text-amber-400 mt-2">📌 Mode Read-Only</p>}
           </div>
-          {!isReadOnly && (
-            <button onClick={() => setShowForm(true)} className="rounded-3xl border border-cyan-500/30 bg-cyan-500/10 px-5 py-3 text-sm font-medium text-cyan-200 transition hover:bg-cyan-500/15">
-              Tambah Transaksi
-            </button>
-          )}
+          <div className="flex items-center gap-3 flex-wrap">
+            {isKetua && (
+              <button
+                onClick={handleExport}
+                disabled={exporting}
+                className="rounded-3xl border border-emerald-500/30 bg-emerald-500/10 px-5 py-3 text-sm font-medium text-emerald-200 transition hover:bg-emerald-500/20 disabled:opacity-50 flex items-center gap-2"
+              >
+                <span>📥</span>
+                {exporting ? 'Mengekspor...' : 'Ekspor Laporan'}
+              </button>
+            )}
+            {!isReadOnly && (
+              <button onClick={() => setShowForm(true)} className="rounded-3xl border border-cyan-500/30 bg-cyan-500/10 px-5 py-3 text-sm font-medium text-cyan-200 transition hover:bg-cyan-500/15">
+                Tambah Transaksi
+              </button>
+            )}
+          </div>
         </div>
         <div className="mt-6 space-y-3">
           {financial.transactions.length === 0 ? (
@@ -147,7 +198,8 @@ export function FinancialPage({ communityId, token, isReadOnly = false }) {
                 <span className={`font-semibold ${tx.type === 'INCOME' ? 'text-emerald-300' : 'text-red-300'}`}>
                   {tx.type === 'INCOME' ? '+' : '-'} Rp {parseFloat(tx.amount).toLocaleString('id-ID')}
                 </span>
-                {!isReadOnly && (
+                {/* Tombol hapus hanya untuk KETUA */}
+                {isKetua && !isReadOnly && (
                   <button onClick={() => handleDelete(tx.id)} className="rounded-lg px-2 py-1 text-xs bg-red-500/20 text-red-300 hover:bg-red-500/30 transition">✕</button>
                 )}
               </div>
