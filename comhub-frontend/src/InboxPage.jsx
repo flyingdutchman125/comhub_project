@@ -98,6 +98,16 @@ export function InboxPage({ token, currentUser }) {
               <p className={`text-sm mt-3 whitespace-pre-wrap ${msg.is_read ? 'text-slate-400' : 'text-slate-200'}`}>
                 {msg.content}
               </p>
+              {msg.type === 'TASK_SUBMISSION' && (
+                <div className="mt-3 rounded-lg bg-blue-500/10 border border-blue-500/20 px-3 py-2 text-xs text-blue-300">
+                  Buka Project Tracking untuk meninjau dan menyetujui pengumpulan tugas ini.
+                </div>
+              )}
+              {msg.type === 'TASK_REVIEW' && (
+                <div className={`mt-3 rounded-lg px-3 py-2 text-xs border ${msg.subject?.includes('Disetujui') ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300' : 'bg-red-500/10 border-red-500/20 text-red-300'}`}>
+                  {msg.subject?.includes('Disetujui') ? 'Tugas Anda telah disetujui dan masuk ke Portofolio!' : 'Tugas ditolak — kumpulkan ulang di halaman Portofolio.'}
+                </div>
+              )}
               
               {msg.type === 'PROMOTION_OFFER' && !msg.is_actioned && (
                 <div className="mt-4 flex gap-3">

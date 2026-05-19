@@ -8,6 +8,7 @@ import { ProjectTrackingPage } from './ProjectTrackingPage'
 import { FinancialPage } from './FinancialPage'
 import { MemberPage } from './MemberPage'
 import { InboxPage } from './InboxPage'
+import { PortfolioPage } from './PortfolioPage'
 
 function CreateCommunityModal({ isOpen, onClose, onSuccess, token }) {
   const [formData, setFormData] = useState({ nama_komunitas: '', deskripsi: '', logo: '' })
@@ -80,6 +81,13 @@ function App() {
   const [stats, setStats] = useState({ totalCommunities: 0, totalProjects: 0, totalMembers: 0 })
 
   const [hasAutoSelected, setHasAutoSelected] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [showNotifications, setShowNotifications] = useState(false)
+
+  // Filtered communities
+  const filteredCommunities = communities.filter(c => 
+    (c.name || c.nama_komunitas || '').toLowerCase().includes(searchQuery.toLowerCase())
+  )
 
   // Fetch communities data
   useEffect(() => {
@@ -125,42 +133,45 @@ function App() {
 
   // Build sidebar items based on role
   const getSidebarItems = () => {
-    const items = [{ label: 'Dashboard', icon: '📊' }]
+    const items = [{ label: 'Dashboard' }]
 
     if (!hasCommunity) {
       // User tanpa komunitas: hanya tampilkan Buat Komunitas
-      items.push({ label: 'Buat Komunitas', icon: '➕', action: 'create' })
+      items.push({ label: 'Buat Komunitas', action: 'create' })
     } else if (selectedCommunity) {
       const role = userRoleInSelected
 
       if (role === 'KETUA') {
         // Ketua: akses penuh semua menu
         items.push(
-          { label: 'Project Tracking', icon: '📋', restricted: false },
-          { label: 'Financial', icon: '💰', restricted: false },
-          { label: 'Member', icon: '👥', restricted: false }
+          { label: 'Project Tracking', restricted: false },
+          { label: 'Financial', restricted: false },
+          { label: 'Member', restricted: false }
         )
       } else if (role === 'SEKRETARIS') {
         // Sekretaris: Project Tracking + Member
         items.push(
-          { label: 'Project Tracking', icon: '📋', restricted: false },
-          { label: 'Member', icon: '👥', restricted: false }
+          { label: 'Project Tracking', restricted: false },
+          { label: 'Member', restricted: false }
         )
       } else if (role === 'BENDAHARA') {
-        // Bendahara: Financial saja
+        // Bendahara: Financial + Project Tracking read-only
         items.push(
-          { label: 'Financial', icon: '💰', restricted: false }
+          { label: 'Project Tracking', restricted: true },
+          { label: 'Financial', restricted: false }
         )
       } else {
-        // Anggota biasa: Financial read-only
+        // Anggota biasa: Project Tracking & Financial read-only
         items.push(
-          { label: 'Financial', icon: '💰', restricted: true }
+          { label: 'Project Tracking', restricted: true },
+          { label: 'Financial', restricted: true }
         )
       }
     }
 
-    items.push({ label: 'Kotak Pesan', icon: '✉️' })
-    items.push({ label: 'Settings', icon: '⚙️' })
+    items.push({ label: 'Kotak Pesan' })
+    items.push({ label: 'Portofolio' })
+    items.push({ label: 'Settings' })
     return items
   }
 
@@ -222,7 +233,7 @@ function App() {
                 return (
                   <button key={item.label} onClick={() => setShowCreateModal(true)}
                     className="w-full flex items-center gap-4 rounded-3xl px-4 py-3 text-left text-sm font-medium bg-gradient-to-r from-emerald-500/20 to-emerald-600/20 text-emerald-200 hover:from-emerald-500/30 hover:to-emerald-600/30 transition">
-                    <span className="text-lg">{item.icon}</span>{item.label}
+                    {item.label}
                   </button>
                 )
               }
@@ -232,8 +243,8 @@ function App() {
                   className={`w-full flex items-center gap-4 rounded-3xl px-4 py-3 text-left text-sm font-medium transition ${isActive
                     ? 'bg-gradient-to-r from-slate-800 via-slate-900 to-slate-950 text-cyan-200 shadow-lg shadow-cyan-500/10'
                     : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>
-                  <span className="text-lg">{item.icon}</span>{item.label}
-                  {item.restricted && <span className="ml-auto text-xs bg-amber-500/20 text-amber-300 px-2 py-1 rounded">🔍</span>}
+                  {item.label}
+                  {item.restricted && <span className="ml-auto text-xs bg-amber-500/20 text-amber-300 px-2 py-1 rounded">Read-Only</span>}
                 </button>
               )
             })}
@@ -281,10 +292,65 @@ function App() {
 
         {/* Main Content */}
         <main className="flex-1 p-6 lg:p-8">
-          <header className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between mb-8">
+          <header className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between mb-8 relative z-40">
             <div>
-              <p className="text-sm text-slate-500">Dashboard / ComHub</p>
+              <p className="text-sm text-slate-500 capitalize">{activeTab} Page / ComHub</p>
               <h2 className="text-3xl font-semibold text-white">{activeTab}</h2>
+            </div>
+
+            <div className="flex items-center gap-4">
+              {/* Search Bar */}
+              {activeTab === 'Dashboard' && (
+                <div className="relative">
+                  <input 
+                    type="text" 
+                    placeholder="Cari komunitas..." 
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full sm:w-64 rounded-full border border-slate-700 bg-slate-900/80 px-4 py-2 text-sm text-white outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition"
+                  />
+                </div>
+              )}
+
+              {/* Notifications */}
+              <div className="relative">
+                <button 
+                  onClick={() => setShowNotifications(!showNotifications)}
+                  className="relative rounded-full bg-slate-800 p-2 text-slate-300 hover:bg-slate-700 hover:text-white transition"
+                >
+                  🔔
+                  <span className="absolute right-1 top-1 flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+                  </span>
+                </button>
+
+                {showNotifications && (
+                  <div className="absolute right-0 mt-2 w-80 origin-top-right rounded-2xl border border-slate-700 bg-slate-800 p-4 shadow-xl z-50">
+                    <div className="flex items-center justify-between mb-3 border-b border-slate-700 pb-2">
+                      <h4 className="text-sm font-semibold text-white">Notifikasi</h4>
+                      <span className="text-xs text-cyan-400 cursor-pointer hover:text-cyan-300">Tandai semua dibaca</span>
+                    </div>
+                    <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
+                      <div className="rounded-xl bg-slate-900/50 p-3 hover:bg-slate-900 transition cursor-pointer">
+                        <div className="flex justify-between items-start">
+                          <p className="text-sm font-medium text-white">Selamat datang!</p>
+                          <span className="h-2 w-2 rounded-full bg-cyan-500 mt-1.5"></span>
+                        </div>
+                        <p className="text-xs text-slate-300 mt-1">Mulai dengan membuat atau bergabung ke komunitas di ComHub.</p>
+                        <p className="text-[10px] text-slate-500 mt-2">Baru saja</p>
+                      </div>
+                      <div className="rounded-xl bg-slate-900/50 p-3 hover:bg-slate-900 transition cursor-pointer">
+                        <div className="flex justify-between items-start">
+                          <p className="text-sm font-medium text-white">Lengkapi Profil Anda</p>
+                        </div>
+                        <p className="text-xs text-slate-300 mt-1">Tambahkan informasi profil Anda untuk dikenali anggota lain.</p>
+                        <p className="text-[10px] text-slate-500 mt-2">2 jam yang lalu</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </header>
 
@@ -292,13 +358,12 @@ function App() {
             <>
               <section className="grid gap-6 lg:grid-cols-3 mb-8">
                 {[
-                  { label: 'Total Komunitas', icon: '🏢', value: stats.totalCommunities, accent: 'bg-blue-500/20 text-blue-300' },
-                  { label: 'Total Program Kerja', icon: '📋', value: stats.totalProjects, accent: 'bg-purple-500/20 text-purple-400' },
-                  { label: 'Total Anggota', icon: '👥', value: stats.totalMembers, accent: 'bg-green-500/20 text-green-400' }
+                  { label: 'Total Komunitas', value: stats.totalCommunities, accent: 'bg-blue-500/20 text-blue-300' },
+                  { label: 'Total Program Kerja', value: stats.totalProjects, accent: 'bg-purple-500/20 text-purple-400' },
+                  { label: 'Total Anggota', value: stats.totalMembers, accent: 'bg-green-500/20 text-green-400' }
                 ].map((item) => (
                   <div key={item.label} className="rounded-[2rem] border border-slate-800 bg-slate-900/90 p-6">
                     <div className={`inline-flex items-center gap-3 rounded-full px-3 py-2 ${item.accent}`}>
-                      <span>{item.icon}</span>
                       <p className="text-xs uppercase tracking-[0.3em] text-slate-200">{item.label}</p>
                     </div>
                     <p className="mt-7 text-4xl font-semibold text-white">{item.value}</p>
@@ -325,9 +390,13 @@ function App() {
                         Buat Komunitas Pertama Anda
                       </button>
                     </div>
+                  ) : filteredCommunities.length === 0 ? (
+                    <div className="py-8 text-center">
+                      <p className="text-slate-400">Tidak ada komunitas yang sesuai dengan pencarian Anda.</p>
+                    </div>
                   ) : (
                     <div className="grid gap-4 sm:grid-cols-2">
-                      {communities.map((c) => (
+                      {filteredCommunities.map((c) => (
                         <CommunityCard key={c.id} community={c} onSelect={(comm) => { setSelectedCommunity(comm); setShowDetailPage(true) }} />
                       ))}
                     </div>
@@ -355,7 +424,7 @@ function App() {
                         <p className="text-xs font-semibold text-emerald-400 mb-2">MULAI SEKARANG</p>
                         <p className="text-xs text-slate-400 mb-3">Buat komunitas pertamamu atau bergabung dengan yang sudah ada!</p>
                         <button onClick={() => setShowCreateModal(true)} className="w-full rounded-lg bg-emerald-500/20 text-emerald-300 px-3 py-2 text-xs hover:bg-emerald-500/30 transition">
-                          ➕ Buat Komunitas
+                          Buat Komunitas
                         </button>
                       </div>
                     )}
@@ -364,13 +433,15 @@ function App() {
               </section>
             </>
           ) : activeTab === 'Project Tracking' && selectedCommunity ? (
-            <ProjectTrackingPage communityId={selectedCommunity.id} token={token} isReadOnly={isReadOnly} currentUserRole={userRoleInSelected} />
+            <ProjectTrackingPage communityId={selectedCommunity.id} token={token} isReadOnly={isReadOnly} currentUserRole={userRoleInSelected} currentUser={user} />
           ) : activeTab === 'Financial' && selectedCommunity ? (
             <FinancialPage communityId={selectedCommunity.id} token={token} isReadOnly={isReadOnly} currentUserRole={userRoleInSelected} />
           ) : activeTab === 'Member' && selectedCommunity ? (
             <MemberPage communityId={selectedCommunity.id} token={token} isReadOnly={isReadOnly} currentUserRole={userRoleInSelected} />
           ) : activeTab === 'Kotak Pesan' ? (
             <InboxPage token={token} currentUser={user} />
+          ) : activeTab === 'Portofolio' ? (
+            <PortfolioPage />
           ) : activeTab !== 'Dashboard' ? (
             <section className="mt-8 rounded-[2rem] border border-slate-800 bg-slate-900/90 p-8">
               <h3 className="text-2xl font-semibold text-white">{activeTab}</h3>
