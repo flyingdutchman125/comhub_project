@@ -3,17 +3,142 @@ const db = require('../config/db');
 // --- FITUR MEMBUAT PROKER BARU ---
 const createProject = async (req, res) => {
     const communityId = req.params.communityId;
-    const { nama_proker, deskripsi, start_date, end_date } = req.body;
+    const userId = req.user.id;
+    const { nama_proyek, deskripsi, anggaran, start_date, end_date } = req.body; // tetep nama_proyek dari frontend
 
     try {
-        const [result] = await db.query(
-            'INSERT INTO projects (community_id, nama_proker, deskripsi, start_date, end_date) VALUES (?, ?, ?, ?, ?)',
-            [communityId, nama_proker, deskripsi, start_date, end_date]
+        // Otorisasi: Pastikan user adalah pengurus
+        const [checkRole] = await db.query(
+            'SELECT community_role FROM community_members WHERE user_id = ? AND community_id = ? AND status_keanggotaan = "AKTIF"',
+            [userId, communityId]
         );
-        res.status(201).json({ message: 'Proker berhasil dibuat!', projectId: result.insertId });
+
+        if (checkRole.length === 0 || !['KETUA', 'SEKRETARIS', 'BENDAHARA'].includes(checkRole[0].community_role)) {
+            return res.status(403).json({ message: 'Akses ditolak! Hanya pengurus yang bisa membuat proyek.' });
+        }
+
+        const [result] = await db.query(
+            'INSERT INTO projects (community_id, nama_proker, deskripsi, anggaran, start_date, end_date) VALUES (?, ?, ?, ?, ?, ?)',
+            [communityId, nama_proyek, deskripsi, anggaran || '0', start_date, end_date]
+        );
+        res.status(201).json({ message: 'Proyek berhasil dibuat!', projectId: result.insertId });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Terjadi kesalahan saat membuat proker.' });
+        res.status(500).json({ message: 'Terjadi kesalahan saat membuat proyek.' });
+    }
+};
+
+// --- FITUR MELIHAT SEMUA PROYEK DALAM KOMUNITAS ---
+const getProjectsByCommunity = async (req, res) => {
+    const communityId = req.params.communityId;
+
+    try {
+        const [projects] = await db.query(`
+            SELECT p.id, p.nama_proker as name, p.deskripsi, p.anggaran, p.progress, p.start_date, p.end_date, p.created_at,
+                (SELECT COUNT(*) FROM tasks t WHERE t.project_id = p.id) as totalTasks,
+                (SELECT COUNT(*) FROM tasks t WHERE t.project_id = p.id AND t.status = 'DONE') as doneTasks
+            FROM projects p
+            WHERE p.community_id = ?
+            ORDER BY p.created_at DESC
+        `, [communityId]);
+
+        // Hitung progress dan format data
+        const formatted = projects.map(p => ({
+            id: p.id,
+            name: p.name,
+            deskripsi: p.deskripsi,
+            anggaran: p.anggaran,
+            start_date: p.start_date,
+            end_date: p.end_date,
+            created_at: p.created_at,
+            totalTasks: p.totalTasks,
+            doneTasks: p.doneTasks,
+            progress: p.progress || 0, // Menggunakan kolom progress manual
+            status: p.progress === 100 ? 'Done'
+                : p.progress >= 50 ? 'On Track'
+                : p.progress > 0 ? 'At Risk'
+                : 'Planning'
+        }));
+
+        res.status(200).json(formatted);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Terjadi kesalahan saat mengambil data proyek.' });
+    }
+};
+
+// --- FITUR MENGUBAH PROYEK ---
+const updateProject = async (req, res) => {
+    const projectId = req.params.projectId;
+    const userId = req.user.id;
+    const { nama_proyek, deskripsi, anggaran, progress, start_date, end_date } = req.body;
+
+    try {
+        // 1. Ambil project untuk mendapatkan community_id
+        const [project] = await db.query('SELECT * FROM projects WHERE id = ?', [projectId]);
+        if (project.length === 0) {
+            return res.status(404).json({ message: 'Proyek tidak ditemukan.' });
+        }
+
+        const communityId = project[0].community_id;
+
+        // 2. Otorisasi
+        const [checkRole] = await db.query(
+            'SELECT community_role FROM community_members WHERE user_id = ? AND community_id = ? AND status_keanggotaan = "AKTIF"',
+            [userId, communityId]
+        );
+
+        if (checkRole.length === 0 || !['KETUA', 'SEKRETARIS', 'BENDAHARA'].includes(checkRole[0].community_role)) {
+            return res.status(403).json({ message: 'Akses ditolak! Hanya pengurus yang bisa mengubah proyek.' });
+        }
+
+        // 3. Update proyek
+        await db.query(
+            'UPDATE projects SET nama_proker = ?, deskripsi = ?, anggaran = ?, progress = ?, start_date = ?, end_date = ? WHERE id = ?',
+            [nama_proyek, deskripsi, anggaran || '0', progress || 0, start_date, end_date, projectId]
+        );
+
+        res.status(200).json({ message: 'Proyek berhasil diperbarui!' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Terjadi kesalahan saat mengubah proyek.' });
+    }
+};
+
+// --- FITUR MENGHAPUS PROYEK ---
+const deleteProject = async (req, res) => {
+    const projectId = req.params.projectId;
+    const userId = req.user.id;
+
+    try {
+        // 1. Ambil project untuk mendapatkan community_id
+        const [project] = await db.query('SELECT * FROM projects WHERE id = ?', [projectId]);
+        if (project.length === 0) {
+            return res.status(404).json({ message: 'Proyek tidak ditemukan.' });
+        }
+
+        const communityId = project[0].community_id;
+
+        // 2. Otorisasi
+        const [checkRole] = await db.query(
+            'SELECT community_role FROM community_members WHERE user_id = ? AND community_id = ? AND status_keanggotaan = "AKTIF"',
+            [userId, communityId]
+        );
+
+        if (checkRole.length === 0 || !['KETUA', 'SEKRETARIS', 'BENDAHARA'].includes(checkRole[0].community_role)) {
+            return res.status(403).json({ message: 'Akses ditolak! Hanya pengurus yang bisa menghapus proyek.' });
+        }
+
+        // 3. Hapus tasks terkait terlebih dahulu
+        await db.query('DELETE FROM tasks WHERE project_id = ?', [projectId]);
+
+        // 4. Hapus proyek
+        await db.query('DELETE FROM projects WHERE id = ?', [projectId]);
+
+        res.status(200).json({ message: 'Proyek berhasil dihapus!' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Terjadi kesalahan saat menghapus proyek.' });
     }
 };
 
@@ -84,4 +209,12 @@ const getProjectBoard = async (req, res) => {
     }
 };
 
-module.exports = { createProject, createTask, updateTaskStatus, getProjectBoard };
+module.exports = {
+    createProject,
+    getProjectsByCommunity,
+    updateProject,
+    deleteProject,
+    createTask,
+    updateTaskStatus,
+    getProjectBoard
+};

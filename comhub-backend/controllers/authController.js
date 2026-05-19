@@ -54,7 +54,15 @@ const login = async (req, res) => {
             return res.status(401).json({ message: 'Password salah!' });
         }
 
-        // 3. Buat token JWT (berisi id dan global_role)
+        // 3. Ambil data membership komunitas user
+        const [memberships] = await db.query(`
+            SELECT cm.community_id, cm.community_role, cm.status_keanggotaan, c.nama_komunitas
+            FROM community_members cm
+            JOIN communities c ON cm.community_id = c.id
+            WHERE cm.user_id = ? AND cm.status_keanggotaan IN ('AKTIF', 'MENUNGGU_SELEKSI')
+        `, [user.id]);
+
+        // 4. Buat token JWT (berisi id dan global_role)
         const token = jwt.sign(
             { id: user.id, role: user.global_role },
             process.env.JWT_SECRET,
@@ -67,7 +75,8 @@ const login = async (req, res) => {
             user: {
                 id: user.id,
                 nama: user.nama,
-                role: user.global_role
+                role: user.global_role,
+                memberships: memberships
             }
         });
 

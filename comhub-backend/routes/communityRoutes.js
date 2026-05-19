@@ -4,15 +4,22 @@ const router = express.Router();
 const {
     createCommunity,
     getAllCommunities,
+    getUserCommunities,
+    getCommunityById,
     joinCommunity,
     getApplicants,
     approveApplicant,
-    assignRole
+    assignRole,
+    removeMember
 } = require('../controllers/communityController');
 const { verifyToken } = require('../middleware/authMiddleware');
 
+// PENTING: Route /my harus di atas /:id agar tidak tertangkap sebagai parameter
+router.get('/my', verifyToken, getUserCommunities);
+
 router.get('/', getAllCommunities);
 router.post('/', verifyToken, createCommunity);
+router.get('/:id', verifyToken, getCommunityById);
 router.post('/:id/join', verifyToken, joinCommunity);
 
 // TAMBAHAN BARU:
@@ -23,5 +30,8 @@ router.get('/:id/applicants', verifyToken, getApplicants);
 // Angka 1 = ID komunitas, Angka 2 = ID user pendaftar (Ahmad)
 router.put('/:id/applicants/:userId/approve', verifyToken, approveApplicant);
 router.put('/:id/members/:userId/role', verifyToken, assignRole);
+
+// Endpoint untuk menghapus anggota (DELETE /api/communities/1/members/2)
+router.delete('/:id/members/:userId', verifyToken, removeMember);
 
 module.exports = router;

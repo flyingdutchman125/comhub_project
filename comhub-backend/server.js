@@ -6,6 +6,8 @@ require('dotenv').config();
 const authRoutes = require('./routes/authRoutes');
 const communityRoutes = require('./routes/communityRoutes');
 const projectRoutes = require('./routes/projectRoutes');
+const financeRoutes = require('./routes/financeRoutes');
+const messageRoutes = require('./routes/messageRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -21,7 +23,9 @@ app.get('/', (req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/communities', communityRoutes);
+app.use('/api/messages', messageRoutes);
 app.use('/api', projectRoutes);
+app.use('/api', financeRoutes);
 
 // Jalankan server
 app.listen(PORT, () => {
