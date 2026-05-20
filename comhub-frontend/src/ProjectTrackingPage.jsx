@@ -19,6 +19,7 @@ export function ProjectTrackingPage({ communityId, token, isReadOnly = false, cu
   const [reviewNote, setReviewNote] = useState('')
 
   const isKetua = currentUserRole === 'KETUA'
+  const isKetuaOrSekretaris = currentUserRole === 'KETUA' || currentUserRole === 'SEKRETARIS'
 
   const fetchProjects = async () => {
     try {
@@ -328,7 +329,7 @@ export function ProjectTrackingPage({ communityId, token, isReadOnly = false, cu
               <h4 className="text-base font-semibold text-white">Tugas: {selectedProject.name}</h4>
               <p className="text-xs text-slate-500">{taskBoard?.progressBar || '0%'} selesai</p>
             </div>
-            {isKetua && (
+            {isKetuaOrSekretaris && (
               <button onClick={() => setShowTaskForm(true)}
                 className="rounded-xl bg-purple-500/10 border border-purple-500/30 px-4 py-2 text-sm font-semibold text-purple-300 hover:bg-purple-500/20 transition">
                 + Bagi Tugas
@@ -370,8 +371,8 @@ export function ProjectTrackingPage({ communityId, token, isReadOnly = false, cu
             ))}
           </div>
 
-          {/* Submissions review (Ketua only) */}
-          {isKetua && submissions.length > 0 && (
+          {/* Submissions review (Ketua/Sekretaris) */}
+          {isKetuaOrSekretaris && submissions.length > 0 && (
             <div>
               <h5 className="text-sm font-semibold text-white mb-2">
                 Pengumpulan Masuk ({submissions.filter(s => s.status === 'PENDING').length} pending)

@@ -328,13 +328,13 @@ const reviewSubmission = async (req, res) => {
         if (subs.length === 0) return res.status(404).json({ message: 'Submission tidak ditemukan.' });
         const sub = subs[0];
 
-        // Otorisasi: hanya Ketua
+        // Otorisasi: Ketua atau Sekretaris
         const [roleCheck] = await db.query(
             'SELECT community_role FROM community_members WHERE user_id = ? AND community_id = ? AND status_keanggotaan = "AKTIF"',
             [userId, sub.community_id]
         );
-        if (roleCheck.length === 0 || roleCheck[0].community_role !== 'KETUA') {
-            return res.status(403).json({ message: 'Hanya Ketua yang dapat meninjau pengumpulan.' });
+        if (roleCheck.length === 0 || !['KETUA', 'SEKRETARIS'].includes(roleCheck[0].community_role)) {
+            return res.status(403).json({ message: 'Hanya Ketua atau Sekretaris yang dapat meninjau pengumpulan.' });
         }
 
         // Update status submission

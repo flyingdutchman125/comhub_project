@@ -498,6 +498,24 @@ const generateReport = async (req, res) => {
     }
 };
 
+// --- FITUR MELIHAT DAFTAR ANGGOTA AKTIF KOMUNITAS ---
+const getCommunityMembers = async (req, res) => {
+    const communityId = req.params.id;
+    try {
+        const [members] = await db.query(`
+            SELECT cm.id, u.id as user_id, u.nama, cm.community_role, cm.status_keanggotaan, cm.joined_at
+            FROM community_members cm
+            JOIN users u ON cm.user_id = u.id
+            WHERE cm.community_id = ? AND cm.status_keanggotaan = 'AKTIF'
+            ORDER BY cm.community_role DESC, u.nama ASC
+        `, [communityId]);
+        res.status(200).json(members);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Terjadi kesalahan saat mengambil data anggota komunitas' });
+    }
+};
+
 // JANGAN LUPA: Update module.exports
 module.exports = {
     createCommunity,
@@ -509,5 +527,6 @@ module.exports = {
     approveApplicant,
     assignRole,
     removeMember,
-    generateReport
+    generateReport,
+    getCommunityMembers
 };

@@ -11,7 +11,8 @@ const {
     approveApplicant,
     assignRole,
     removeMember,
-    generateReport
+    generateReport,
+    getCommunityMembers
 } = require('../controllers/communityController');
 const { verifyToken } = require('../middleware/authMiddleware');
 
@@ -24,6 +25,9 @@ router.get('/:id', verifyToken, getCommunityById);
 router.post('/:id/join', verifyToken, joinCommunity);
 
 // TAMBAHAN BARU:
+// Endpoint untuk melihat daftar anggota aktif di komunitas
+router.get('/:id/members', verifyToken, getCommunityMembers);
+
 // Endpoint untuk melihat pendaftar (GET /api/communities/1/applicants)
 router.get('/:id/applicants', verifyToken, getApplicants);
 
