@@ -30,10 +30,30 @@ function EditProfileModal({ profile, onClose, onSaved, token }) {
     nama: profile?.nama || '',
     prodi: profile?.prodi || '',
     bio: profile?.bio || '',
-    skills: (profile?.skills || []).join(', ')
+    skills: (profile?.skills || []).join(', '),
+    foto_profile: profile?.foto_profile || ''
   })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
+  const fileRef = useRef()
+
+  const handlePhotoChange = (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      setError('Format file tidak didukung. Harap pilih gambar.')
+      return
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setError('Ukuran gambar maksimal adalah 2MB.')
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      setForm(p => ({ ...p, foto_profile: ev.target.result }))
+    }
+    reader.readAsDataURL(file)
+  }
 
   const handleSave = async (e) => {
     e.preventDefault()
@@ -53,10 +73,43 @@ function EditProfileModal({ profile, onClose, onSaved, token }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
-      <div className="bg-slate-900 rounded-[2rem] border border-slate-800 p-6 max-w-lg w-full">
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50 animate-fadeIn">
+      <div className="bg-slate-900 rounded-[2rem] border border-slate-800 p-6 max-w-lg w-full shadow-2xl">
         <h3 className="text-xl font-semibold text-white mb-5">Edit Profil</h3>
         <form onSubmit={handleSave} className="space-y-4">
+          {/* Avatar Upload Container */}
+          <div className="flex flex-col items-center gap-2 mb-4">
+            <div 
+              onClick={() => fileRef.current.click()} 
+              className="relative group cursor-pointer h-24 w-24 rounded-3xl overflow-hidden border border-slate-700 shadow-md transition hover:border-cyan-500"
+            >
+              {form.foto_profile ? (
+                <img 
+                  src={form.foto_profile} 
+                  alt="Preview" 
+                  className="h-full w-full object-cover group-hover:opacity-85 transition" 
+                />
+              ) : (
+                <div className="h-full w-full bg-slate-800 flex flex-col items-center justify-center text-slate-400 group-hover:text-cyan-300 transition">
+                  <span className="text-2xl">📷</span>
+                  <span className="text-[10px] mt-1 font-semibold">Pilih Foto</span>
+                </div>
+              )}
+              {/* Overlay edit badge */}
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition duration-200">
+                <span className="text-xs text-cyan-300 font-bold">Ubah Foto</span>
+              </div>
+            </div>
+            <input 
+              ref={fileRef} 
+              type="file" 
+              accept="image/*" 
+              className="hidden" 
+              onChange={handlePhotoChange} 
+            />
+            <p className="text-[10px] text-slate-500">Maksimal 2MB (JPG, PNG)</p>
+          </div>
+
           <div>
             <label className="block text-sm text-slate-300 mb-1">Nama Lengkap</label>
             <input className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white outline-none focus:border-cyan-400"
@@ -207,11 +260,19 @@ export function PortfolioPage() {
         <div className="pointer-events-none absolute -top-20 -right-20 h-64 w-64 rounded-full bg-cyan-500/10 blur-3xl" />
         <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-6">
           {/* Avatar */}
-          <div className="relative">
-            <div className="h-20 w-20 rounded-3xl bg-gradient-to-br from-cyan-400 via-blue-500 to-purple-600 flex items-center justify-center text-2xl font-bold text-white shadow-xl shadow-cyan-500/20">
-              {initials}
-            </div>
-            <div className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-emerald-500 border-2 border-slate-900" />
+          <div className="relative group cursor-pointer" onClick={() => setShowEdit(true)}>
+            {user?.foto_profile ? (
+              <img 
+                src={user.foto_profile} 
+                alt="Foto Profil" 
+                className="h-20 w-20 rounded-3xl object-cover shadow-xl shadow-cyan-500/20 border border-slate-700 transition group-hover:opacity-85" 
+              />
+            ) : (
+              <div className="h-20 w-20 rounded-3xl bg-gradient-to-br from-cyan-400 via-blue-500 to-purple-600 flex items-center justify-center text-2xl font-bold text-white shadow-xl shadow-cyan-500/20 transition group-hover:opacity-85">
+                {initials}
+              </div>
+            )}
+            <div className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-emerald-500 border-2 border-slate-900 shadow" />
           </div>
 
           {/* Info */}

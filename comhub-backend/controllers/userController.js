@@ -5,7 +5,7 @@ const getProfile = async (req, res) => {
     const userId = req.user.id;
     try {
         const [users] = await db.query(
-            'SELECT id, nama, email, prodi, bio, skills FROM users WHERE id = ?',
+            'SELECT id, nama, email, prodi, bio, skills, foto_profile FROM users WHERE id = ?',
             [userId]
         );
         if (users.length === 0) return res.status(404).json({ message: 'User tidak ditemukan' });
@@ -33,12 +33,12 @@ const getProfile = async (req, res) => {
 // --- UPDATE PROFILE USER ---
 const updateProfile = async (req, res) => {
     const userId = req.user.id;
-    const { nama, prodi, bio, skills } = req.body;
+    const { nama, prodi, bio, skills, foto_profile } = req.body;
     try {
         const skillsJson = JSON.stringify(Array.isArray(skills) ? skills : []);
         await db.query(
-            'UPDATE users SET nama = ?, prodi = ?, bio = ?, skills = ? WHERE id = ?',
-            [nama, prodi, bio, skillsJson, userId]
+            'UPDATE users SET nama = ?, prodi = ?, bio = ?, skills = ?, foto_profile = ? WHERE id = ?',
+            [nama, prodi, bio, skillsJson, foto_profile, userId]
         );
         res.status(200).json({ message: 'Profil berhasil diperbarui!' });
     } catch (error) {
@@ -53,7 +53,7 @@ const getPortfolio = async (req, res) => {
     try {
         // 1. Data user
         const [users] = await db.query(
-            'SELECT id, nama, email, prodi, bio, skills FROM users WHERE id = ?', [userId]
+            'SELECT id, nama, email, prodi, bio, skills, foto_profile FROM users WHERE id = ?', [userId]
         );
         if (users.length === 0) return res.status(404).json({ message: 'User tidak ditemukan' });
         const user = users[0];
