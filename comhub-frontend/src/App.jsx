@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Swal from 'sweetalert2'
 import { useAuth } from './AuthContext'
 import { LoginForm } from './LoginForm'
@@ -10,6 +10,8 @@ import { FinancialPage } from './FinancialPage'
 import { MemberPage } from './MemberPage'
 import { InboxPage } from './InboxPage'
 import { PortfolioPage } from './PortfolioPage'
+import { CommunityNewsPage } from './CommunityNewsPage'
+import CropModal from './CropModal'
 
 function CreateCommunityModal({ isOpen, onClose, onSuccess, token }) {
   const [formData, setFormData] = useState({ nama_komunitas: '', deskripsi: '', logo: '' })
@@ -72,12 +74,35 @@ function CreateCommunityModal({ isOpen, onClose, onSuccess, token }) {
 
 function NewsFormModal({ isOpen, onClose, onSubmit, formData, setFormData, isEditing }) {
   if (!isOpen) return null
+
+  const [showCropModal, setShowCropModal] = useState(false)
+  const [cropSrc, setCropSrc] = useState(null)
+  const cropCallbackRef = useRef(null)
+
+  const handleImageChange = (e, callback) => {
+    const file = e.target.files[0]
+    if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      Swal.fire({ icon: 'error', title: 'File tidak valid', text: 'Silakan pilih file gambar.', background: '#0f172a', color: '#fff', confirmButtonColor: '#06b6d4' })
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      setCropSrc(event.target.result)
+      cropCallbackRef.current = callback
+      setShowCropModal(true)
+    }
+    reader.readAsDataURL(file)
+  }
+
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50 animate-fadeIn">
-      <div className="bg-slate-900 rounded-[2rem] border border-slate-800 p-6 max-w-lg w-full shadow-2xl shadow-cyan-500/5">
+      <div className="bg-slate-900 rounded-[2rem] border border-slate-800 p-6 max-w-lg w-full shadow-2xl shadow-cyan-500/5 max-h-[90vh] flex flex-col">
         <h3 className="text-2xl font-bold text-white">{isEditing ? 'Edit Berita Terkini' : 'Tambah Berita Terkini'}</h3>
         <p className="mt-2 text-slate-400 text-sm">Publikasikan informasi atau pengumuman resmi ke seluruh mahasiswa dan dosen.</p>
-        <form onSubmit={onSubmit} className="mt-6 space-y-4">
+        <form onSubmit={onSubmit} className="mt-6 space-y-4 overflow-y-auto flex-1 pr-1 scrollbar-thin scrollbar-thumb-slate-800">
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">Judul Berita</label>
             <input 
@@ -89,6 +114,38 @@ function NewsFormModal({ isOpen, onClose, onSubmit, formData, setFormData, isEdi
               placeholder="Masukkan judul menarik" 
             />
           </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-2">Gambar Berita (Rasio 16:9)</label>
+            <div className="flex flex-col gap-3">
+              {formData.image ? (
+                <div className="relative rounded-xl border border-slate-700 bg-slate-950 overflow-hidden aspect-video w-full max-w-sm">
+                  <img src={formData.image} alt="Preview" className="w-full h-full object-cover" />
+                  <button 
+                    type="button"
+                    onClick={() => setFormData(p => ({ ...p, image: '' }))}
+                    className="absolute top-2 right-2 rounded-full bg-red-600/80 text-white p-1.5 hover:bg-red-600 transition"
+                    title="Hapus Gambar"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ) : (
+                <label className="flex flex-col items-center justify-center border-2 border-dashed border-slate-700 hover:border-cyan-500 rounded-xl p-6 cursor-pointer bg-slate-800/40 hover:bg-slate-800/80 transition group">
+                  <span className="text-3xl mb-2 group-hover:scale-110 transition duration-200">🖼️</span>
+                  <span className="text-xs font-semibold text-slate-400 group-hover:text-cyan-300 transition">Pilih Gambar Berita</span>
+                  <span className="text-[10px] text-slate-500 mt-1">Akan otomatis di-crop ke rasio 16:9</span>
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    className="hidden" 
+                    onChange={(e) => handleImageChange(e, (base64) => setFormData(p => ({ ...p, image: base64 })))} 
+                  />
+                </label>
+              )}
+            </div>
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">Isi Berita</label>
             <textarea 
@@ -127,7 +184,9 @@ function NewsDetailModal({ isOpen, onClose, news }) {
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50 animate-fadeIn" onClick={onClose}>
       <div className="bg-slate-900 rounded-[2rem] border border-slate-800 p-6 max-w-xl w-full shadow-2xl shadow-cyan-500/5 max-h-[85vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-          <span className="rounded-full bg-cyan-500/10 text-cyan-400 px-3 py-1 text-xs font-semibold uppercase tracking-wider">PENGUMUMAN RESMI</span>
+          <span className="rounded-full bg-cyan-500/10 text-cyan-400 px-3 py-1 text-xs font-semibold uppercase tracking-wider">
+            {news.community_name || 'PENGUMUMAN RESMI'}
+          </span>
           <button onClick={onClose} className="text-slate-400 hover:text-white transition text-lg">✕</button>
         </div>
         
@@ -137,6 +196,12 @@ function NewsDetailModal({ isOpen, onClose, news }) {
             <span>✍️ Oleh: <strong className="text-slate-300">{news.author_name || 'Admin'}</strong></span>
             <span>📅 Dipublikasikan: <strong className="text-slate-300">{new Date(news.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</strong></span>
           </div>
+
+          {news.image && (
+            <div className="w-full aspect-video rounded-xl overflow-hidden my-4 border border-slate-800 bg-slate-950">
+              <img src={news.image} alt={news.title} className="w-full h-full object-cover" />
+            </div>
+          )}
           
           <div className="mt-6 text-slate-300 text-sm leading-relaxed whitespace-pre-wrap">
             {news.content}
@@ -360,7 +425,15 @@ function App() {
         items.push(
           { label: 'Project Tracking', restricted: false },
           { label: 'Financial', restricted: false },
-          { label: 'Member', restricted: false }
+          { label: 'Member', restricted: false },
+          { label: 'Berita Komunitas', restricted: false }
+        )
+      } else if (role === 'KADIV') {
+        // Kadiv: Berita Komunitas + Project Tracking & Financial read-only
+        items.push(
+          { label: 'Project Tracking', restricted: true },
+          { label: 'Financial', restricted: true },
+          { label: 'Berita Komunitas', restricted: false }
         )
       } else if (role === 'SEKRETARIS') {
         // Sekretaris: Project Tracking + Member
@@ -383,7 +456,6 @@ function App() {
       }
     }
 
-    items.push({ label: 'Kotak Pesan' })
     items.push({ label: 'Portofolio' })
     items.push({ label: 'Settings' })
     return items
@@ -392,7 +464,7 @@ function App() {
   // Effect to handle role changes dynamically: if activeTab is no longer in sidebar, redirect to Dashboard
   useEffect(() => {
     const allowedTabs = getSidebarItems().map(i => i.label)
-    if (!allowedTabs.includes(activeTab)) {
+    if (!allowedTabs.includes(activeTab) && activeTab !== 'Kotak Pesan') {
       setActiveTab('Dashboard')
     }
   }, [userRoleInSelected, selectedCommunity, activeTab, hasCommunity])
@@ -526,6 +598,19 @@ function App() {
                 </div>
               )}
 
+              {/* Kotak Pesan */}
+              <button 
+                onClick={() => setActiveTab('Kotak Pesan')}
+                className={`relative rounded-full p-2 text-slate-300 transition ${
+                  activeTab === 'Kotak Pesan' 
+                    ? 'bg-cyan-500 text-slate-950 font-bold' 
+                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
+                }`}
+                title="Kotak Pesan"
+              >
+                ✉️
+              </button>
+
               {/* Notifications */}
               <div className="relative">
                 <button 
@@ -648,14 +733,16 @@ function App() {
                           className="group relative rounded-2xl border border-slate-800 bg-slate-950/40 p-4 hover:border-slate-700 transition cursor-pointer duration-200"
                         >
                           <div className="flex items-center justify-between mb-2">
-                            <span className="rounded-full bg-cyan-500/10 text-cyan-400 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider">Info</span>
+                            <span className="rounded-full bg-cyan-500/10 text-cyan-400 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider">
+                              {news.community_name || 'Info Kampus'}
+                            </span>
                             <span className="text-[10px] text-slate-500">{new Date(news.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}</span>
                           </div>
                           <h4 className="text-sm font-semibold text-white group-hover:text-cyan-300 transition duration-200 line-clamp-1">{news.title}</h4>
                           <p className="text-xs text-slate-400 mt-1 line-clamp-2 leading-relaxed">{news.content}</p>
                           <div className="flex items-center justify-between mt-3 pt-2 border-t border-slate-800/40">
                             <p className="text-[10px] text-slate-500 truncate max-w-[150px]">✍️ {news.author_name || 'Admin'}</p>
-                            {user?.role === 'KEMAHASISWAAN' && (
+                            {(user?.role === 'KEMAHASISWAAN' || (news.community_id && ['KETUA', 'KADIV'].includes(getCommunityRole(news.community_id)))) && (
                               <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                                 <button onClick={() => handleEditNewsClick(news)} className="text-slate-400 hover:text-cyan-400 text-xs transition cursor-pointer" title="Edit">✏️</button>
                                 <button onClick={() => handleDeleteNews(news.id)} className="text-slate-400 hover:text-red-400 text-xs transition cursor-pointer" title="Hapus">🗑️</button>
@@ -675,6 +762,8 @@ function App() {
             <FinancialPage communityId={selectedCommunity.id} token={token} isReadOnly={isReadOnly} currentUserRole={userRoleInSelected} />
           ) : activeTab === 'Member' && selectedCommunity ? (
             <MemberPage communityId={selectedCommunity.id} token={token} isReadOnly={isReadOnly} currentUserRole={userRoleInSelected} />
+          ) : activeTab === 'Berita Komunitas' && selectedCommunity ? (
+            <CommunityNewsPage communityId={selectedCommunity.id} token={token} communityName={selectedCommunity.name || selectedCommunity.nama_komunitas} />
           ) : activeTab === 'Kotak Pesan' ? (
             <InboxPage token={token} currentUser={user} />
           ) : activeTab === 'Portofolio' ? (

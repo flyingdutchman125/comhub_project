@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from './AuthContext'
+import CropModal from './CropModal'
 
 const STATUS_CONFIG = {
   APPROVED: { label: 'Disetujui', color: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' },
@@ -36,6 +37,9 @@ function EditProfileModal({ profile, onClose, onSaved, token }) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
   const fileRef = useRef()
+  const [showCropModal, setShowCropModal] = useState(false)
+  const [cropSrc, setCropSrc] = useState(null)
+  const cropCallbackRef = useRef(null)
 
   const handlePhotoChange = (e) => {
     const file = e.target.files[0]
@@ -50,7 +54,9 @@ function EditProfileModal({ profile, onClose, onSaved, token }) {
     }
     const reader = new FileReader()
     reader.onload = (ev) => {
-      setForm(p => ({ ...p, foto_profile: ev.target.result }))
+      setCropSrc(ev.target.result)
+      cropCallbackRef.current = (cropped) => setForm(p => ({ ...p, foto_profile: cropped }))
+      setShowCropModal(true)
     }
     reader.readAsDataURL(file)
   }
@@ -100,13 +106,18 @@ function EditProfileModal({ profile, onClose, onSaved, token }) {
                 <span className="text-xs text-cyan-300 font-bold">Ubah Foto</span>
               </div>
             </div>
-            <input 
-              ref={fileRef} 
-              type="file" 
-              accept="image/*" 
-              className="hidden" 
-              onChange={handlePhotoChange} 
-            />
+            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
+            {showCropModal && cropSrc && (
+              <CropModal
+                imageSrc={cropSrc}
+                aspect={1}
+                onCancel={() => { setShowCropModal(false); setCropSrc(null); cropCallbackRef.current = null }}
+                onCropDone={(cropped) => {
+                  if (cropCallbackRef.current) cropCallbackRef.current(cropped)
+                  setShowCropModal(false); setCropSrc(null); cropCallbackRef.current = null
+                }}
+              />
+            )}
             <p className="text-[10px] text-slate-500">Maksimal 2MB (JPG, PNG)</p>
           </div>
 
