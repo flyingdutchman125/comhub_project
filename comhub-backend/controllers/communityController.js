@@ -366,6 +366,15 @@ const getCommunityById = async (req, res) => {
             ORDER BY transaction_date DESC
         `, [communityId]);
 
+        // 4.5 Ambil data berita (news) komunitas
+        const [news] = await db.query(`
+            SELECT n.*, u.nama AS author_name
+            FROM news n
+            JOIN users u ON n.author_id = u.id
+            WHERE n.community_id = ?
+            ORDER BY n.created_at DESC
+        `, [communityId]);
+
         // 5. Hitung total budget, spent, dan remaining
         let totalBudget = 0;
         let totalSpent = 0;
@@ -410,6 +419,7 @@ const getCommunityById = async (req, res) => {
             memberCount: members.length,
             projects,
             projectCount: projects.length,
+            news,
             financial: {
                 totalBudget,
                 spent: totalSpent,

@@ -10,6 +10,7 @@ const financeRoutes = require('./routes/financeRoutes');
 const messageRoutes = require('./routes/messageRoutes');
 const userRoutes = require('./routes/userRoutes');
 const newsRoutes = require('./routes/newsRoutes');
+const attendanceRoutes = require('./routes/attendanceRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -31,6 +32,7 @@ app.use('/api', projectRoutes);
 app.use('/api', financeRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/news', newsRoutes);
+app.use('/api', attendanceRoutes);
 
 // Jalankan server
 app.listen(PORT, () => {

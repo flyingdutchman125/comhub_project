@@ -12,6 +12,7 @@ import { InboxPage } from './InboxPage'
 import { PortfolioPage } from './PortfolioPage'
 import { CommunityNewsPage } from './CommunityNewsPage'
 import CropModal from './CropModal'
+import { AttendancePage } from './AttendancePage'
 
 function CreateCommunityModal({ isOpen, onClose, onSuccess, token }) {
   const [formData, setFormData] = useState({ nama_komunitas: '', deskripsi: '', logo: '' })
@@ -426,6 +427,7 @@ function App() {
           { label: 'Project Tracking', restricted: false },
           { label: 'Financial', restricted: false },
           { label: 'Member', restricted: false },
+          { label: 'Absensi', restricted: false },
           { label: 'Berita Komunitas', restricted: false }
         )
       } else if (role === 'KADIV') {
@@ -433,25 +435,29 @@ function App() {
         items.push(
           { label: 'Project Tracking', restricted: true },
           { label: 'Financial', restricted: true },
+          { label: 'Absensi', restricted: true },
           { label: 'Berita Komunitas', restricted: false }
         )
       } else if (role === 'SEKRETARIS') {
         // Sekretaris: Project Tracking + Member
         items.push(
           { label: 'Project Tracking', restricted: false },
-          { label: 'Member', restricted: false }
+          { label: 'Member', restricted: false },
+          { label: 'Absensi', restricted: false }
         )
       } else if (role === 'BENDAHARA') {
         // Bendahara: Financial + Project Tracking read-only
         items.push(
           { label: 'Project Tracking', restricted: true },
-          { label: 'Financial', restricted: false }
+          { label: 'Financial', restricted: false },
+          { label: 'Absensi', restricted: true }
         )
       } else {
         // Anggota biasa: Project Tracking & Financial read-only
         items.push(
           { label: 'Project Tracking', restricted: true },
-          { label: 'Financial', restricted: true }
+          { label: 'Financial', restricted: true },
+          { label: 'Absensi', restricted: true }
         )
       }
     }
@@ -762,6 +768,8 @@ function App() {
             <FinancialPage communityId={selectedCommunity.id} token={token} isReadOnly={isReadOnly} currentUserRole={userRoleInSelected} />
           ) : activeTab === 'Member' && selectedCommunity ? (
             <MemberPage communityId={selectedCommunity.id} token={token} isReadOnly={isReadOnly} currentUserRole={userRoleInSelected} />
+          ) : activeTab === 'Absensi' && selectedCommunity ? (
+            <AttendancePage communityId={selectedCommunity.id} token={token} isReadOnly={isReadOnly} currentUserRole={userRoleInSelected} />
           ) : activeTab === 'Berita Komunitas' && selectedCommunity ? (
             <CommunityNewsPage communityId={selectedCommunity.id} token={token} communityName={selectedCommunity.name || selectedCommunity.nama_komunitas} />
           ) : activeTab === 'Kotak Pesan' ? (

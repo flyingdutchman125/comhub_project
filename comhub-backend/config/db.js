@@ -56,6 +56,52 @@ promisePool.getConnection()
             } else {
                 console.log('Kolom image di tabel news sudah ada.');
             }
+
+            console.log('Memeriksa kolom community_id di tabel news...');
+            const [columnsComm] = await promisePool.query("SHOW COLUMNS FROM news LIKE 'community_id'");
+            if (columnsComm.length === 0) {
+                console.log('Menambahkan kolom community_id ke tabel news...');
+                await promisePool.query('ALTER TABLE news ADD COLUMN community_id INT DEFAULT NULL');
+                try {
+                    await promisePool.query('ALTER TABLE news ADD CONSTRAINT fk_news_community FOREIGN KEY (community_id) REFERENCES communities(id) ON DELETE CASCADE');
+                    console.log('Berhasil menambahkan kolom community_id dan constraint foreign key ke tabel news!');
+                } catch (fkErr) {
+                    console.log('Gagal/Sudah ada foreign key constraint:', fkErr.message);
+                }
+            } else {
+                console.log('Kolom community_id di tabel news sudah ada.');
+            }
+
+            console.log('Memeriksa dan membuat tabel attendance_sessions...');
+            await promisePool.query(`
+                CREATE TABLE IF NOT EXISTS attendance_sessions (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    community_id INT NOT NULL,
+                    title VARCHAR(255) NOT NULL,
+                    description TEXT,
+                    session_date DATE NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (community_id) REFERENCES communities(id) ON DELETE CASCADE
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            `);
+            console.log('Inisialisasi tabel attendance_sessions selesai.');
+
+            console.log('Memeriksa dan membuat tabel attendances...');
+            await promisePool.query(`
+                CREATE TABLE IF NOT EXISTS attendances (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    session_id INT NOT NULL,
+                    user_id INT NOT NULL,
+                    status ENUM('HADIR', 'SAKIT', 'IZIN', 'ALFA') NOT NULL DEFAULT 'ALFA',
+                    notes VARCHAR(255) DEFAULT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    UNIQUE KEY unique_session_user (session_id, user_id),
+                    FOREIGN KEY (session_id) REFERENCES attendance_sessions(id) ON DELETE CASCADE,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            `);
+            console.log('Inisialisasi tabel attendances selesai.');
         } catch (initErr) {
             console.error('Error saat inisialisasi database:', initErr.message);
         }

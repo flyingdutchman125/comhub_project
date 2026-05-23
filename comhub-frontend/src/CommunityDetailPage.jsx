@@ -7,6 +7,8 @@ export function CommunityDetailPage({ community, onBack }) {
   const [detail, setDetail] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [selectedNews, setSelectedNews] = useState(null)
+  const [showDetailModal, setShowDetailModal] = useState(false)
 
   // Fetch data real dari API
   const fetchDetail = useCallback(async () => {
@@ -86,6 +88,7 @@ export function CommunityDetailPage({ community, onBack }) {
 
   const members = detail?.members || []
   const projects = detail?.projects || []
+  const news = detail?.news || []
   const financial = detail?.financial || { totalBudget: 0, spent: 0, remaining: 0, transactions: [] }
   const hasJoined = detail?.isMember || false
   const joinStatus = detail?.joinStatus
@@ -127,6 +130,61 @@ export function CommunityDetailPage({ community, onBack }) {
       <div className="mx-auto max-w-6xl px-6 py-8">
         <div className="grid gap-8 lg:grid-cols-3">
           <div className="lg:col-span-2 space-y-8">
+            {/* Berita Komunitas */}
+            <section className="rounded-[2rem] border border-slate-800 bg-slate-900/90 p-6 shadow-lg shadow-slate-950/10">
+              <div className="mb-6 flex justify-between items-center">
+                <div>
+                  <h2 className="text-2xl font-bold text-white">📢 Berita & Pengumuman</h2>
+                  <p className="mt-1 text-slate-400">Kabar terbaru dan pengumuman resmi dari pengurus</p>
+                </div>
+              </div>
+              <div className="space-y-4">
+                {news.length === 0 ? (
+                  <p className="text-center text-slate-400 py-8">Belum ada berita atau pengumuman</p>
+                ) : (
+                  news.map((item) => (
+                    <div key={item.id} className="rounded-xl border border-slate-800 bg-slate-950/70 p-4 hover:border-slate-700 transition duration-200 flex flex-col md:flex-row gap-4">
+                      {item.image && (
+                        <div 
+                          onClick={() => { setSelectedNews(item); setShowDetailModal(true); }}
+                          className="w-full md:w-48 aspect-video rounded-lg overflow-hidden border border-slate-800 bg-slate-950 shrink-0 cursor-pointer"
+                        >
+                          <img src={item.image} alt={item.title} className="w-full h-full object-cover hover:scale-105 transition duration-300" />
+                        </div>
+                      )}
+                      <div className="flex-1 flex flex-col justify-between">
+                        <div>
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-xs text-slate-500">
+                              {new Date(item.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                            </span>
+                          </div>
+                          <h3 
+                            onClick={() => { setSelectedNews(item); setShowDetailModal(true); }}
+                            className="font-bold text-white text-lg hover:text-cyan-300 cursor-pointer transition line-clamp-1"
+                          >
+                            {item.title}
+                          </h3>
+                          <p className="text-sm text-slate-400 mt-2 line-clamp-2 leading-relaxed whitespace-pre-wrap">
+                            {item.content}
+                          </p>
+                        </div>
+                        <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
+                          <span>✍️ Oleh: <strong className="text-slate-400">{item.author_name}</strong></span>
+                          <button 
+                            onClick={() => { setSelectedNews(item); setShowDetailModal(true); }}
+                            className="text-cyan-400 hover:underline font-semibold"
+                          >
+                            Baca Selengkapnya →
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </section>
+
             {/* Project Tracking */}
             <section className="rounded-[2rem] border border-slate-800 bg-slate-900/90 p-6 shadow-lg shadow-slate-950/10">
               <div className="mb-6">
@@ -226,6 +284,47 @@ export function CommunityDetailPage({ community, onBack }) {
           </aside>
         </div>
       </div>
+
+      {/* News Detail Modal */}
+      {showDetailModal && selectedNews && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50 animate-fadeIn" onClick={() => setShowDetailModal(false)}>
+          <div className="bg-slate-900 rounded-[2rem] border border-slate-800 p-6 max-w-xl w-full shadow-2xl shadow-cyan-500/5 max-h-[85vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <span className="rounded-full bg-cyan-500/10 text-cyan-400 px-3 py-1 text-xs font-semibold uppercase tracking-wider">
+                Berita Komunitas
+              </span>
+              <button onClick={() => setShowDetailModal(false)} className="text-slate-400 hover:text-white transition text-lg">✕</button>
+            </div>
+            
+            <div className="overflow-y-auto mt-4 flex-1 pr-1 scrollbar-thin scrollbar-thumb-slate-800">
+              <h3 className="text-2xl font-bold text-white leading-snug">{selectedNews.title}</h3>
+              <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500 mt-2">
+                <span>✍️ Oleh: <strong className="text-slate-300">{selectedNews.author_name}</strong></span>
+                <span>📅 Dipublikasikan: <strong className="text-slate-300">{new Date(selectedNews.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</strong></span>
+              </div>
+              
+              {selectedNews.image && (
+                <div className="w-full aspect-video rounded-xl overflow-hidden my-4 border border-slate-800 bg-slate-950">
+                  <img src={selectedNews.image} alt={selectedNews.title} className="w-full h-full object-cover" />
+                </div>
+              )}
+
+              <div className="mt-6 text-slate-300 text-sm leading-relaxed whitespace-pre-wrap">
+                {selectedNews.content}
+              </div>
+            </div>
+            
+            <div className="pt-4 border-t border-slate-800 flex justify-end mt-4">
+              <button 
+                onClick={() => setShowDetailModal(false)} 
+                className="rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 px-6 py-2 text-sm font-semibold transition"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
