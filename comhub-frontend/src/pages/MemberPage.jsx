@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import Swal from 'sweetalert2'
-import { exportMemberPDF } from './pdfExport'
+import { exportMemberPDF } from '../pdfExport'
 
 export function MemberPage({ communityId, token, isReadOnly = false, currentUserRole = null }) {
   const [members, setMembers] = useState([])
@@ -246,6 +246,50 @@ export function MemberPage({ communityId, token, isReadOnly = false, currentUser
     }
   }
 
+  const handleUpdateRating = async (userId, rating) => {
+    try {
+      const res = await fetch(`http://localhost:3000/api/communities/${communityId}/members/${userId}/rating`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ rating })
+      })
+
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.message || 'Gagal memperbarui rating')
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Rating Diperbarui!',
+        text: 'Keaktifan anggota berhasil dinilai.',
+        background: '#0f172a',
+        color: '#fff',
+        confirmButtonColor: '#06b6d4',
+        timer: 1000,
+        showConfirmButton: false
+      })
+      fetchMembers()
+    } catch (err) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Gagal',
+        text: err.message,
+        background: '#0f172a',
+        color: '#fff',
+        confirmButtonColor: '#06b6d4'
+      })
+    }
+  }
+
+  const getActivityBadge = (rating) => {
+    if (!rating) return 'Belum Dinilai'
+    if (rating === 5) return '🔥 Sangat Aktif'
+    if (rating >= 3) return '⭐ Aktif'
+    return '🔸 Kurang Aktif'
+  }
+
   const getRoleColor = (role) => {
     switch (role) {
       case 'KETUA': return 'bg-amber-500/20 text-amber-300'
@@ -283,13 +327,14 @@ export function MemberPage({ communityId, token, isReadOnly = false, currentUser
             <thead><tr className="text-left text-slate-400">
               <th className="pb-4 pr-6">Nama</th>
               <th className="pb-4 pr-6">Jabatan</th>
+              <th className="pb-4 pr-6">Keaktifan</th>
               <th className="pb-4 pr-6">Status</th>
               <th className="pb-4 pr-6">Bergabung</th>
               {!isReadOnly && currentUserRole === 'KETUA' && <th className="pb-4">Aksi</th>}
             </tr></thead>
             <tbody>
               {members.length === 0 ? (
-                <tr><td colSpan="5" className="py-8 text-center text-slate-400">Belum ada anggota</td></tr>
+                <tr><td colSpan="6" className="py-8 text-center text-slate-400">Belum ada anggota</td></tr>
               ) : members.map(member => (
                 <tr key={member.id} className="border-t border-slate-800 text-slate-200">
                   <td className="py-4 pr-6 font-medium text-white">{member.nama}</td>
@@ -297,6 +342,48 @@ export function MemberPage({ communityId, token, isReadOnly = false, currentUser
                     <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getRoleColor(member.community_role)}`}>
                       {member.community_role}
                     </span>
+                  </td>
+                  <td className="py-4 pr-6">
+                    {!isReadOnly && isKetua && member.community_role !== 'KETUA' ? (
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-0.5">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <button
+                              key={star}
+                              onClick={() => handleUpdateRating(member.user_id, star)}
+                              className={`text-base transition transform hover:scale-125 focus:outline-none cursor-pointer ${
+                                star <= (member.rating || 0) ? 'text-amber-400' : 'text-slate-600'
+                              }`}
+                              title={`Beri Rating ${star} Bintang`}
+                            >
+                              ★
+                            </button>
+                          ))}
+                        </div>
+                        <span className="text-[10px] text-slate-400 font-medium">
+                          {getActivityBadge(member.rating)}
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-0.5">
+                          {member.rating ? (
+                            Array.from({ length: 5 }).map((_, i) => (
+                              <span key={i} className={i < member.rating ? 'text-amber-400' : 'text-slate-600'}>
+                                ★
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-xs text-slate-500 italic">Belum Dinilai</span>
+                          )}
+                        </div>
+                        {member.rating && (
+                          <span className="text-[10px] text-slate-400 font-medium">
+                            {getActivityBadge(member.rating)}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </td>
                   <td className="py-4 pr-6">
                     <span className="inline-flex rounded-full px-3 py-1 text-xs font-semibold bg-emerald-500/10 text-emerald-300">

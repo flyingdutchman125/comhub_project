@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import Swal from 'sweetalert2'
-import CropModal from './CropModal'
+import CropModal from '../components/CropModal'
 
 export function CommunityNewsPage({ communityId, token, communityName }) {
   const [newsList, setNewsList] = useState([])

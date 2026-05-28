@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
-import { useAuth } from './AuthContext'
-import CropModal from './CropModal'
+import { useAuth } from '../AuthContext'
+import CropModal from '../components/CropModal'
 
 const STATUS_CONFIG = {
   APPROVED: { label: 'Disetujui', color: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' },

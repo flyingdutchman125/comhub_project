@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useAuth } from './AuthContext'
+import { useAuth } from '../AuthContext'
 
 export function LoginForm({ onSwitchToRegister, onLoginSuccess }) {
   const { login } = useAuth()

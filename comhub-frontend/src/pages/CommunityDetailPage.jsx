@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useAuth } from './AuthContext'
+import { useAuth } from '../AuthContext'
+import Swal from 'sweetalert2'
 
 export function CommunityDetailPage({ community, onBack }) {
   const { token, refreshMemberships } = useAuth()
@@ -46,13 +47,75 @@ export function CommunityDetailPage({ community, onBack }) {
       // Update global state & refresh detail
       await refreshMemberships()
       await fetchDetail()
+      Swal.fire('Berhasil', 'Pendaftaran Anda berhasil dikirim dan sedang menunggu seleksi.', 'success')
     } catch (err) {
       console.error('Join error', err)
-      alert(err.message)
+      Swal.fire({
+        title: 'Gagal Bergabung',
+        text: err.message,
+        icon: 'warning',
+        confirmButtonColor: '#3085d6',
+      })
     } finally {
       setIsJoining(false)
     }
   }
+
+  const handleUpgradeUKM = async () => {
+    try {
+      const res = await fetch(`http://localhost:3000/api/communities/${detail.id}/upgrade`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      const data = await res.json()
+      
+      if (!res.ok) {
+        if (data.checklist) {
+          const { isOldEnough, isAttendanceGood, attendancePercentage, isFinanciallyHealthy, hasEnoughProjects, projectCount } = data.checklist
+          Swal.fire({
+            title: 'Syarat Upgrade Belum Terpenuhi',
+            html: `
+              <div class="text-left text-sm space-y-2 mt-4">
+                <p>${isOldEnough ? '✅' : '❌'} <b>Umur Komunitas:</b> ${isOldEnough ? 'Minimal 3 tahun (Terpenuhi)' : 'Harus minimal 3 tahun'}</p>
+                <p>${isAttendanceGood ? '✅' : '❌'} <b>Absensi Anggota:</b> ${attendancePercentage} ${isAttendanceGood ? '(Terpenuhi)' : '(Minimal 80% dalam 3 tahun)'}</p>
+                <p>${isFinanciallyHealthy ? '✅' : '❌'} <b>Kesehatan Keuangan:</b> ${isFinanciallyHealthy ? 'Pemasukan > Pengeluaran (Terpenuhi)' : 'Pemasukan harus lebih besar dari pengeluaran'}</p>
+                <p>${hasEnoughProjects ? '✅' : '❌'} <b>Program Kerja Terlaksana:</b> ${projectCount} proyek ${hasEnoughProjects ? '(Terpenuhi)' : '(Minimal 3 proyek selesai dalam 3 tahun)'}</p>
+              </div>
+            `,
+            icon: 'warning',
+            background: '#0f172a',
+            color: '#fff',
+            confirmButtonColor: '#06b6d4'
+          })
+          return
+        }
+        throw new Error(data.message || 'Gagal mengajukan upgrade')
+      }
+
+      Swal.fire({
+        title: 'Berhasil!',
+        text: data.message || 'Pengajuan UKM berhasil dikirim dan menunggu persetujuan Dosen!',
+        icon: 'success',
+        background: '#0f172a',
+        color: '#fff',
+        confirmButtonColor: '#06b6d4'
+      })
+      fetchDetail()
+    } catch (err) {
+      Swal.fire({
+        title: 'Gagal Mengajukan',
+        text: err.message,
+        icon: 'error',
+        background: '#0f172a',
+        color: '#fff',
+        confirmButtonColor: '#06b6d4'
+      })
+    }
+  }
+
 
   const getRoleColor = (role) => {
     switch (role) {
@@ -62,6 +125,22 @@ export function CommunityDetailPage({ community, onBack }) {
       case 'KADIV': return 'bg-purple-500/20 text-purple-300'
       default: return 'bg-slate-700/40 text-slate-300'
     }
+  }
+
+  const getDuration = (startDate) => {
+    if (!startDate) return '';
+    const start = new Date(startDate);
+    const now = new Date();
+    const diffTime = Math.abs(now - start);
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) return 'baru saja dibuat';
+    if (diffDays < 30) return `${diffDays} hari`;
+    const diffMonths = Math.floor(diffDays / 30);
+    if (diffMonths < 12) return `${diffMonths} bulan`;
+    const diffYears = Math.floor(diffMonths / 12);
+    const remainingMonths = diffMonths % 12;
+    return `${diffYears} tahun${remainingMonths > 0 ? ` ${remainingMonths} bulan` : ''}`;
   }
 
   if (loading) {
@@ -103,8 +182,32 @@ export function CommunityDetailPage({ community, onBack }) {
               <button onClick={onBack} className="mb-4 inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-400 hover:bg-slate-800 hover:text-white transition">
                 ← Kembali
               </button>
-              <h1 className="text-3xl font-bold text-white">{detail?.name}</h1>
-              <p className="mt-2 text-slate-400">{detail?.description}</p>
+              <h1 className="text-3xl font-bold text-white flex items-center gap-3">
+                {detail?.name}
+                {detail?.status === 'UKM' && (
+                  <span className="text-xs px-2 py-1 bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 rounded">
+                    UKM Resmi
+                  </span>
+                )}
+              </h1>
+              <div className="flex items-center gap-2 mt-2 flex-wrap">
+                {detail?.created_at && (
+                  <div className="inline-flex items-center gap-1.5 rounded-md bg-cyan-500/10 px-2.5 py-1 text-xs font-medium text-cyan-400 border border-cyan-500/20">
+                    <span>🚀 Berjalan selama {getDuration(detail.created_at)}</span>
+                  </div>
+                )}
+                {detail?.userRole === 'KETUA' && detail?.status === 'KOMUNITAS' && detail?.upgrade_status === 'TIDAK_ADA' && (
+                  <button onClick={handleUpgradeUKM} className="inline-flex items-center gap-1.5 rounded-md bg-purple-500/10 hover:bg-purple-500/20 px-2.5 py-1 text-xs font-medium text-purple-400 border border-purple-500/20 transition cursor-pointer">
+                    ✨ Ajukan Menjadi UKM
+                  </button>
+                )}
+                {detail?.upgrade_status === 'MENUNGGU_DOSEN' && (
+                  <div className="inline-flex items-center gap-1.5 rounded-md bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-300 border border-slate-700">
+                    ⏳ Menunggu Pengesahan UKM
+                  </div>
+                )}
+              </div>
+              <p className="mt-3 text-slate-400 max-w-2xl">{detail?.description}</p>
             </div>
             {!hasJoined && joinStatus !== 'MENUNGGU_SELEKSI' && (
               <button onClick={handleJoinCommunity} disabled={isJoining}

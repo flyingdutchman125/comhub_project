@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import Swal from 'sweetalert2'
-import { exportProjectPDF } from './pdfExport'
+import { exportProjectPDF } from '../pdfExport'
 
 export function ProjectTrackingPage({ communityId, token, isReadOnly = false, currentUserRole = null, currentUser = null }) {
   const [projects, setProjects] = useState([])

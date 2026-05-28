@@ -1,226 +1,23 @@
 import { useState, useEffect, useRef } from 'react'
 import Swal from 'sweetalert2'
 import { useAuth } from './AuthContext'
-import { LoginForm } from './LoginForm'
-import { RegisterForm } from './RegisterForm'
-import { CommunityCard } from './CommunityCard'
-import { CommunityDetailPage } from './CommunityDetailPage'
-import { ProjectTrackingPage } from './ProjectTrackingPage'
-import { FinancialPage } from './FinancialPage'
-import { MemberPage } from './MemberPage'
-import { InboxPage } from './InboxPage'
-import { PortfolioPage } from './PortfolioPage'
-import { CommunityNewsPage } from './CommunityNewsPage'
-import CropModal from './CropModal'
-import { AttendancePage } from './AttendancePage'
+import { LoginForm } from './components/LoginForm'
+import { RegisterForm } from './components/RegisterForm'
+import { CommunityCard } from './components/CommunityCard'
+import { CommunityDetailPage } from './pages/CommunityDetailPage'
+import { ProjectTrackingPage } from './pages/ProjectTrackingPage'
+import { FinancialPage } from './pages/FinancialPage'
+import { MemberPage } from './pages/MemberPage'
+import { InboxPage } from './pages/InboxPage'
+import { PortfolioPage } from './pages/PortfolioPage'
+import { CommunityNewsPage } from './pages/CommunityNewsPage'
+import CropModal from './components/CropModal'
+import { AttendancePage } from './pages/AttendancePage'
+import { ApprovalPage } from './pages/ApprovalPage'
 
-function CreateCommunityModal({ isOpen, onClose, onSuccess, token }) {
-  const [formData, setFormData] = useState({ nama_komunitas: '', deskripsi: '', logo: '' })
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true); setError(null)
-    try {
-      const res = await fetch('http://localhost:3000/api/communities', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify(formData)
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.message || 'Gagal membuat komunitas')
-      onSuccess()
-      setFormData({ nama_komunitas: '', deskripsi: '', logo: '' })
-      onClose()
-    } catch (err) { setError(err.message) }
-    finally { setLoading(false) }
-  }
-
-  if (!isOpen) return null
-
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <div className="bg-slate-900 rounded-[2rem] border border-slate-800 p-6 max-w-md w-full">
-        <h3 className="text-2xl font-semibold text-white">Buat Komunitas Baru</h3>
-        <p className="mt-2 text-slate-400">Anda akan menjadi Ketua komunitas ini</p>
-        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-          <div>
-            <label className="block text-sm text-slate-300 mb-2">Nama Komunitas</label>
-            <input type="text" name="nama_komunitas" value={formData.nama_komunitas} onChange={(e) => setFormData(p => ({...p, nama_komunitas: e.target.value}))} required
-              className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white outline-none focus:border-cyan-400" placeholder="Nama komunitas Anda" />
-          </div>
-          <div>
-            <label className="block text-sm text-slate-300 mb-2">Deskripsi</label>
-            <textarea name="deskripsi" value={formData.deskripsi} onChange={(e) => setFormData(p => ({...p, deskripsi: e.target.value}))} required rows="4"
-              className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white outline-none focus:border-cyan-400" placeholder="Jelaskan tentang komunitas Anda" />
-          </div>
-          <div>
-            <label className="block text-sm text-slate-300 mb-2">Logo URL (Optional)</label>
-            <input type="url" name="logo" value={formData.logo} onChange={(e) => setFormData(p => ({...p, logo: e.target.value}))}
-              className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-white outline-none focus:border-cyan-400" placeholder="https://example.com/logo.png" />
-          </div>
-          {error && <div className="text-red-400 text-sm bg-red-500/10 p-3 rounded-lg">{error}</div>}
-          <div className="flex gap-3">
-            <button type="submit" disabled={loading} className="flex-1 rounded-lg bg-cyan-500 px-4 py-2 font-semibold text-slate-950 hover:bg-cyan-400 transition disabled:opacity-50">
-              {loading ? 'Membuat...' : 'Buat Komunitas'}
-            </button>
-            <button type="button" onClick={onClose} className="flex-1 rounded-lg border border-slate-700 px-4 py-2 font-semibold text-slate-300 hover:bg-slate-800 transition">Batal</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  )
-}
-
-function NewsFormModal({ isOpen, onClose, onSubmit, formData, setFormData, isEditing }) {
-  if (!isOpen) return null
-
-  const [showCropModal, setShowCropModal] = useState(false)
-  const [cropSrc, setCropSrc] = useState(null)
-  const cropCallbackRef = useRef(null)
-
-  const handleImageChange = (e, callback) => {
-    const file = e.target.files[0]
-    if (!file) return
-
-    if (!file.type.startsWith('image/')) {
-      Swal.fire({ icon: 'error', title: 'File tidak valid', text: 'Silakan pilih file gambar.', background: '#0f172a', color: '#fff', confirmButtonColor: '#06b6d4' })
-      return
-    }
-
-    const reader = new FileReader()
-    reader.onload = (event) => {
-      setCropSrc(event.target.result)
-      cropCallbackRef.current = callback
-      setShowCropModal(true)
-    }
-    reader.readAsDataURL(file)
-  }
-
-  return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50 animate-fadeIn">
-      <div className="bg-slate-900 rounded-[2rem] border border-slate-800 p-6 max-w-lg w-full shadow-2xl shadow-cyan-500/5 max-h-[90vh] flex flex-col">
-        <h3 className="text-2xl font-bold text-white">{isEditing ? 'Edit Berita Terkini' : 'Tambah Berita Terkini'}</h3>
-        <p className="mt-2 text-slate-400 text-sm">Publikasikan informasi atau pengumuman resmi ke seluruh mahasiswa dan dosen.</p>
-        <form onSubmit={onSubmit} className="mt-6 space-y-4 overflow-y-auto flex-1 pr-1 scrollbar-thin scrollbar-thumb-slate-800">
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">Judul Berita</label>
-            <input 
-              type="text" 
-              required
-              value={formData.title} 
-              onChange={(e) => setFormData(p => ({...p, title: e.target.value}))}
-              className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2.5 text-white outline-none focus:border-cyan-400 transition" 
-              placeholder="Masukkan judul menarik" 
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">Gambar Berita (Rasio 16:9)</label>
-            <div className="flex flex-col gap-3">
-              {formData.image ? (
-                <div className="relative rounded-xl border border-slate-700 bg-slate-950 overflow-hidden aspect-video w-full max-w-sm">
-                  <img src={formData.image} alt="Preview" className="w-full h-full object-cover" />
-                  <button 
-                    type="button"
-                    onClick={() => setFormData(p => ({ ...p, image: '' }))}
-                    className="absolute top-2 right-2 rounded-full bg-red-600/80 text-white p-1.5 hover:bg-red-600 transition"
-                    title="Hapus Gambar"
-                  >
-                    ✕
-                  </button>
-                </div>
-              ) : (
-                <label className="flex flex-col items-center justify-center border-2 border-dashed border-slate-700 hover:border-cyan-500 rounded-xl p-6 cursor-pointer bg-slate-800/40 hover:bg-slate-800/80 transition group">
-                  <span className="text-3xl mb-2 group-hover:scale-110 transition duration-200">🖼️</span>
-                  <span className="text-xs font-semibold text-slate-400 group-hover:text-cyan-300 transition">Pilih Gambar Berita</span>
-                  <span className="text-[10px] text-slate-500 mt-1">Akan otomatis di-crop ke rasio 16:9</span>
-                  <input 
-                    type="file" 
-                    accept="image/*" 
-                    className="hidden" 
-                    onChange={(e) => handleImageChange(e, (base64) => setFormData(p => ({ ...p, image: base64 })))} 
-                  />
-                </label>
-              )}
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">Isi Berita</label>
-            <textarea 
-              required 
-              rows="6"
-              value={formData.content} 
-              onChange={(e) => setFormData(p => ({...p, content: e.target.value}))}
-              className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2.5 text-white outline-none focus:border-cyan-400 transition resize-none" 
-              placeholder="Tuliskan detail pengumuman atau berita secara lengkap di sini..." 
-            />
-          </div>
-          <div className="flex gap-3 pt-2">
-            <button 
-              type="submit" 
-              className="flex-1 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 px-4 py-2.5 font-bold transition shadow-lg shadow-cyan-500/20"
-            >
-              {isEditing ? 'Simpan' : 'Publikasikan'}
-            </button>
-            <button 
-              type="button" 
-              onClick={onClose} 
-              className="flex-1 rounded-lg border border-slate-700 hover:bg-slate-800 text-slate-300 px-4 py-2.5 font-bold transition"
-            >
-              Batal
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  )
-}
-
-function NewsDetailModal({ isOpen, onClose, news }) {
-  if (!isOpen || !news) return null
-  return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50 animate-fadeIn" onClick={onClose}>
-      <div className="bg-slate-900 rounded-[2rem] border border-slate-800 p-6 max-w-xl w-full shadow-2xl shadow-cyan-500/5 max-h-[85vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-          <span className="rounded-full bg-cyan-500/10 text-cyan-400 px-3 py-1 text-xs font-semibold uppercase tracking-wider">
-            {news.community_name || 'PENGUMUMAN RESMI'}
-          </span>
-          <button onClick={onClose} className="text-slate-400 hover:text-white transition text-lg">✕</button>
-        </div>
-        
-        <div className="overflow-y-auto mt-4 flex-1 pr-1 scrollbar-thin scrollbar-thumb-slate-800">
-          <h3 className="text-2xl font-bold text-white leading-snug">{news.title}</h3>
-          <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500 mt-2">
-            <span>✍️ Oleh: <strong className="text-slate-300">{news.author_name || 'Admin'}</strong></span>
-            <span>📅 Dipublikasikan: <strong className="text-slate-300">{new Date(news.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</strong></span>
-          </div>
-
-          {news.image && (
-            <div className="w-full aspect-video rounded-xl overflow-hidden my-4 border border-slate-800 bg-slate-950">
-              <img src={news.image} alt={news.title} className="w-full h-full object-cover" />
-            </div>
-          )}
-          
-          <div className="mt-6 text-slate-300 text-sm leading-relaxed whitespace-pre-wrap">
-            {news.content}
-          </div>
-        </div>
-        
-        <div className="pt-4 border-t border-slate-800 flex justify-end mt-4">
-          <button 
-            onClick={onClose} 
-            className="rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 px-6 py-2 text-sm font-semibold transition"
-          >
-            Tutup
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
+import { CreateCommunityModal } from './components/CreateCommunityModal'
+import { NewsFormModal } from './components/NewsFormModal'
+import { NewsDetailModal } from './components/NewsDetailModal'
 
 function App() {
   const [authPage, setAuthPage] = useState('login')
@@ -230,12 +27,18 @@ function App() {
   const [showDetailPage, setShowDetailPage] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [communities, setCommunities] = useState([])
+  const [topCommunities, setTopCommunities] = useState([])
   const [loadingCommunities, setLoadingCommunities] = useState(false)
   const [stats, setStats] = useState({ totalCommunities: 0, totalProjects: 0, totalMembers: 0 })
 
   const [hasAutoSelected, setHasAutoSelected] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
   const [showNotifications, setShowNotifications] = useState(false)
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchQuery])
 
   // News-related State & Effects
   const [newsList, setNewsList] = useState([])
@@ -376,13 +179,19 @@ function App() {
       if (!isAuthenticated || !token) return
       setLoadingCommunities(true)
       try {
-        const res = await fetch('http://localhost:3000/api/communities', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        })
-        if (!res.ok) throw new Error('Failed to fetch')
+        const [res, topRes] = await Promise.all([
+          fetch('http://localhost:3000/api/communities', { headers: { 'Authorization': `Bearer ${token}` } }),
+          fetch('http://localhost:3000/api/communities/top')
+        ])
+        if (!res.ok) throw new Error('Failed to fetch communities')
+        
         const data = await res.json()
+        let topData = []
+        if (topRes.ok) topData = await topRes.json()
+
         if (mounted && Array.isArray(data)) {
           setCommunities(data)
+          setTopCommunities(topData)
           let totalMembers = 0, totalProjects = 0
           data.forEach(c => { totalMembers += (c.memberCount || 0); totalProjects += (c.projectCount || 0) })
           setStats({ totalCommunities: data.length, totalProjects, totalMembers })
@@ -414,14 +223,19 @@ function App() {
   // Build sidebar items based on role
   const getSidebarItems = () => {
     const items = [{ label: 'Dashboard' }]
+    const canCreateCommunityAndPortfolio = user?.role !== 'KEMAHASISWAAN' && user?.role !== 'DOSEN'
 
     if (!hasCommunity) {
       // User tanpa komunitas: hanya tampilkan Buat Komunitas
-      items.push({ label: 'Buat Komunitas', action: 'create' })
+      if (canCreateCommunityAndPortfolio) items.push({ label: 'Buat Komunitas', action: 'create' })
     } else if (selectedCommunity) {
+      const membership = user?.memberships?.find(m => m.community_id === selectedCommunity.id)
+      const statusKeanggotaan = membership?.status_keanggotaan
       const role = userRoleInSelected
 
-      if (role === 'KETUA') {
+      if (statusKeanggotaan === 'MENUNGGU_SELEKSI') {
+        // Jika masih menunggu seleksi, jangan tampilkan menu komunitas
+      } else if (role === 'KETUA') {
         // Ketua: akses penuh semua menu
         items.push(
           { label: 'Project Tracking', restricted: false },
@@ -452,17 +266,30 @@ function App() {
           { label: 'Financial', restricted: false },
           { label: 'Absensi', restricted: true }
         )
-      } else {
+      } else if (role === 'ANGGOTA') {
         // Anggota biasa: Project Tracking & Financial read-only
         items.push(
           { label: 'Project Tracking', restricted: true },
           { label: 'Financial', restricted: true },
           { label: 'Absensi', restricted: true }
         )
+      } else if (role === 'PEMBINA') {
+        // Dosen Pembina: Pantau Project & Financial
+        items.push(
+          { label: 'Project Tracking', restricted: true },
+          { label: 'Financial', restricted: true }
+        )
       }
     }
 
-    items.push({ label: 'Portofolio' })
+    if (canCreateCommunityAndPortfolio) {
+      items.push({ label: 'Portofolio' })
+    }
+    
+    if (user?.role === 'DOSEN' || user?.role === 'KEMAHASISWAAN') {
+      items.push({ label: 'Persetujuan Komunitas' })
+    }
+
     items.push({ label: 'Settings' })
     return items
   }
@@ -678,34 +505,97 @@ function App() {
               </section>
 
               <section className="grid gap-6 xl:grid-cols-[1.45fr_1fr]">
-                <div className="rounded-[2rem] border border-slate-800 bg-slate-900/90 p-6">
-                  <div className="flex items-center justify-between gap-4 mb-6">
-                    <div>
-                      <h3 className="text-xl font-semibold text-white">Daftar Komunitas</h3>
-                      <p className="text-sm text-slate-500">Pilih komunitas untuk mengelola</p>
-                    </div>
-                    <span className="rounded-full bg-slate-800 px-3 py-1 text-xs text-slate-400">{communities.length} Komunitas</span>
-                  </div>
-                  {loadingCommunities ? (
-                    <div className="flex justify-center py-8"><div className="h-8 w-8 rounded-full border-2 border-slate-700 border-t-cyan-500 animate-spin" /></div>
-                  ) : communities.length === 0 ? (
-                    <div className="py-8 text-center">
-                      <p className="text-slate-400">Belum ada komunitas</p>
-                      <button onClick={() => setShowCreateModal(true)} className="mt-4 rounded-lg bg-cyan-500/20 text-cyan-300 px-4 py-2 text-sm hover:bg-cyan-500/30 transition">
-                        Buat Komunitas Pertama Anda
-                      </button>
-                    </div>
-                  ) : filteredCommunities.length === 0 ? (
-                    <div className="py-8 text-center">
-                      <p className="text-slate-400">Tidak ada komunitas yang sesuai dengan pencarian Anda.</p>
-                    </div>
-                  ) : (
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      {filteredCommunities.map((c) => (
-                        <CommunityCard key={c.id} community={c} onSelect={(comm) => { setSelectedCommunity(comm); setShowDetailPage(true) }} />
-                      ))}
+                <div className="flex flex-col gap-6">
+                  {/* Top Communities Widget */}
+                  {topCommunities.length > 0 && (
+                    <div className="rounded-[2rem] border border-cyan-500/20 bg-gradient-to-br from-slate-900 to-slate-950 p-6 relative overflow-hidden shadow-lg shadow-cyan-500/5">
+                      <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
+                        <span className="text-8xl">🏆</span>
+                      </div>
+                      <div className="relative z-10">
+                        <div className="flex items-center gap-3 mb-6">
+                          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-cyan-500/20 text-cyan-400 text-xl">
+                            🔥
+                          </span>
+                          <div>
+                            <h3 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">Top Komunitas Berprestasi</h3>
+                            <p className="text-xs text-slate-400">Paling banyak menyelesaikan proyek</p>
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap gap-4">
+                          {topCommunities.map((c, index) => (
+                            <div key={c.id} className="flex-1 min-w-[200px] flex items-center gap-4 rounded-2xl bg-slate-800/50 p-4 border border-slate-700/50 hover:border-cyan-500/50 transition cursor-pointer"
+                              onClick={() => { setSelectedCommunity(c); setShowDetailPage(true) }}>
+                              <div className="relative flex-shrink-0">
+                                {c.logo ? (
+                                  <img src={c.logo} alt={c.nama_komunitas} className="h-12 w-12 rounded-full object-cover border border-slate-700" />
+                                ) : (
+                                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 text-lg font-bold text-slate-950">
+                                    {c.nama_komunitas.charAt(0)}
+                                  </div>
+                                )}
+                                <div className="absolute -top-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full bg-yellow-500 text-[10px] font-bold text-slate-900 border-2 border-slate-900">
+                                  #{index + 1}
+                                </div>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <h4 className="text-sm font-semibold text-white truncate">{c.nama_komunitas}</h4>
+                                <p className="text-xs text-cyan-400 font-medium">{c.completedProjects ?? c.completed_projects} Proyek Selesai</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   )}
+
+                  {/* Daftar Komunitas */}
+                  <div className="rounded-[2rem] border border-slate-800 bg-slate-900/90 p-6">
+                    <div className="flex items-center justify-between gap-4 mb-6">
+                      <div>
+                        <h3 className="text-xl font-semibold text-white">Daftar Komunitas</h3>
+                        <p className="text-sm text-slate-500">Pilih komunitas untuk mengelola</p>
+                      </div>
+                      <span className="rounded-full bg-slate-800 px-3 py-1 text-xs text-slate-400">{communities.length} Komunitas</span>
+                    </div>
+                    {loadingCommunities ? (
+                      <div className="flex justify-center py-8"><div className="h-8 w-8 rounded-full border-2 border-slate-700 border-t-cyan-500 animate-spin" /></div>
+                    ) : communities.length === 0 ? (
+                      <div className="py-8 text-center">
+                        <p className="text-slate-400">Belum ada komunitas</p>
+                        {user?.role !== 'KEMAHASISWAAN' && user?.role !== 'DOSEN' && (
+                          <button onClick={() => setShowCreateModal(true)} className="mt-4 rounded-lg bg-cyan-500/20 text-cyan-300 px-4 py-2 text-sm hover:bg-cyan-500/30 transition">
+                            Buat Komunitas Pertama Anda
+                          </button>
+                        )}
+                      </div>
+                    ) : filteredCommunities.length === 0 ? (
+                      <div className="py-8 text-center">
+                        <p className="text-slate-400">Tidak ada komunitas yang sesuai dengan pencarian Anda.</p>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="grid gap-4 sm:grid-cols-2">
+                          {filteredCommunities.slice((currentPage - 1) * 6, currentPage * 6).map((c) => (
+                            <CommunityCard key={c.id} community={c} onSelect={(comm) => { setSelectedCommunity(comm); setShowDetailPage(true) }} />
+                          ))}
+                        </div>
+                        {Math.ceil(filteredCommunities.length / 6) > 1 && (
+                          <div className="mt-6 flex justify-center gap-2">
+                            {Array.from({ length: Math.ceil(filteredCommunities.length / 6) }).map((_, i) => (
+                              <button
+                                key={i}
+                                onClick={() => setCurrentPage(i + 1)}
+                                className={`w-8 h-8 rounded-full text-sm font-semibold transition ${currentPage === i + 1 ? 'bg-cyan-500 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
+                              >
+                                {i + 1}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
                 </div>
 
                 <aside className="rounded-[2rem] border border-slate-800 bg-slate-900/90 p-6 flex flex-col max-h-[550px]">
@@ -774,6 +664,8 @@ function App() {
             <CommunityNewsPage communityId={selectedCommunity.id} token={token} communityName={selectedCommunity.name || selectedCommunity.nama_komunitas} />
           ) : activeTab === 'Kotak Pesan' ? (
             <InboxPage token={token} currentUser={user} />
+          ) : activeTab === 'Persetujuan Komunitas' ? (
+            <ApprovalPage token={token} userRole={user?.role} />
           ) : activeTab === 'Portofolio' ? (
             <PortfolioPage />
           ) : activeTab !== 'Dashboard' ? (

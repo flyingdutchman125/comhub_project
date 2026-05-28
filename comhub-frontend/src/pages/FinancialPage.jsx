@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import Swal from 'sweetalert2'
-import { exportFinancialPDF } from './pdfExport'
+import { exportFinancialPDF } from '../pdfExport'
 
 export function FinancialPage({ communityId, token, isReadOnly = false, currentUserRole = null }) {
   const [financial, setFinancial] = useState({ totalBudget: 0, spent: 0, remaining: 0, transactions: [] })
