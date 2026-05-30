@@ -32,6 +32,14 @@ promisePool.getConnection()
                 console.log('Tabel communities sudah memiliki PRIMARY KEY.');
             }
 
+            console.log('Memastikan kolom logo di tabel communities dapat menampung Base64...');
+            try {
+                await promisePool.query('ALTER TABLE communities MODIFY COLUMN logo LONGTEXT');
+                console.log('Berhasil memperbarui kolom logo menjadi LONGTEXT.');
+            } catch (err) {
+                console.log('Gagal memperbarui kolom logo:', err.message);
+            }
+
             console.log('Memeriksa dan membuat tabel news...');
             await promisePool.query(`
                 CREATE TABLE IF NOT EXISTS news (
@@ -102,6 +110,54 @@ promisePool.getConnection()
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
             `);
             console.log('Inisialisasi tabel attendances selesai.');
+
+            console.log('Memeriksa dan membuat tabel project_discussions...');
+            await promisePool.query(`
+                CREATE TABLE IF NOT EXISTS project_discussions (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    project_id INT NOT NULL,
+                    user_id INT NOT NULL,
+                    message TEXT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            `);
+            
+            const [columnsDisc] = await promisePool.query("SHOW COLUMNS FROM project_discussions LIKE 'is_edited'");
+            if (columnsDisc.length === 0) {
+                await promisePool.query('ALTER TABLE project_discussions ADD COLUMN is_edited BOOLEAN DEFAULT FALSE');
+            }
+            console.log('Inisialisasi tabel project_discussions selesai.');
+
+            console.log('Memeriksa dan membuat tabel project_discussion_reads...');
+            await promisePool.query(`
+                CREATE TABLE IF NOT EXISTS project_discussion_reads (
+                    message_id INT NOT NULL,
+                    user_id INT NOT NULL,
+                    read_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (message_id, user_id),
+                    FOREIGN KEY (message_id) REFERENCES project_discussions(id) ON DELETE CASCADE,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            `);
+            console.log('Inisialisasi tabel project_discussion_reads selesai.');
+
+            console.log('Memeriksa dan membuat tabel community_reviews...');
+            await promisePool.query(`
+                CREATE TABLE IF NOT EXISTS community_reviews (
+                    community_id INT NOT NULL,
+                    user_id INT NOT NULL,
+                    rating INT NOT NULL CHECK(rating >= 1 AND rating <= 5),
+                    comment TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    PRIMARY KEY (community_id, user_id),
+                    FOREIGN KEY (community_id) REFERENCES communities(id) ON DELETE CASCADE,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            `);
+            console.log('Inisialisasi tabel community_reviews selesai.');
         } catch (initErr) {
             console.error('Error saat inisialisasi database:', initErr.message);
         }

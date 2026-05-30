@@ -9,7 +9,9 @@ const {
     generateReport,
     getTopCommunities,
     updateMemberRating,
-    updateCommunity
+    updateCommunity,
+    addOrUpdateReview,
+    getCommunityReviews
 } = require('../controllers/communityController');
 
 const {
@@ -74,5 +76,9 @@ router.get('/:id/report', verifyToken, generateReport);
 
 // Endpoint untuk memberikan rating keaktifan anggota (PUT /api/communities/1/members/2/rating) - Hanya Ketua
 router.put('/:id/members/:userId/rating', verifyToken, updateMemberRating);
+
+// Endpoint untuk ulasan dan rating komunitas
+router.post('/:id/reviews', verifyToken, addOrUpdateReview);
+router.get('/:id/reviews', getCommunityReviews);
 
 module.exports = router;

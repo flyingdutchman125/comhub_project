@@ -1,5 +1,7 @@
 const express = require('express');
 const cors = require('cors');
+const http = require('http');
+const { Server } = require('socket.io');
 require('dotenv').config();
 
 // Import routes
@@ -13,7 +15,21 @@ const newsRoutes = require('./routes/newsRoutes');
 const attendanceRoutes = require('./routes/attendanceRoutes');
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+    cors: {
+        origin: "*",
+        methods: ["GET", "POST"]
+    }
+});
+
 const PORT = process.env.PORT || 3000;
+
+// Inject io to request object
+app.use((req, res, next) => {
+    req.io = io;
+    next();
+});
 
 // Middleware
 app.use(cors());
@@ -34,7 +50,22 @@ app.use('/api/users', userRoutes);
 app.use('/api/news', newsRoutes);
 app.use('/api', attendanceRoutes);
 
+// Socket.IO Events
+io.on('connection', (socket) => {
+    console.log(`User connected to socket: ${socket.id}`);
+    
+    // Join room berdasarkan projectId
+    socket.on('join_project', (projectId) => {
+        socket.join(`project_${projectId}`);
+        console.log(`Socket ${socket.id} joined room: project_${projectId}`);
+    });
+
+    socket.on('disconnect', () => {
+        console.log(`User disconnected: ${socket.id}`);
+    });
+});
+
 // Jalankan server
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`Server ComHub berjalan di http://localhost:${PORT}`);
 });

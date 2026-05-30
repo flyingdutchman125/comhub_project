@@ -209,6 +209,200 @@ const getProjectBoard = async (req, res) => {
     }
 };
 
+// --- FITUR MENDAPATKAN DISKUSI PROYEK ---
+const getProjectDiscussions = async (req, res) => {
+    const projectId = req.params.projectId;
+
+    try {
+        const [discussions] = await db.query(`
+            SELECT d.id, d.message, d.created_at, d.is_edited, u.nama as user_name, u.foto_profile, d.user_id
+            FROM project_discussions d
+            JOIN users u ON d.user_id = u.id
+            WHERE d.project_id = ?
+            ORDER BY d.created_at ASC
+        `, [projectId]);
+
+        if (discussions.length === 0) {
+            return res.status(200).json([]);
+        }
+
+        const [reads] = await db.query(`
+            SELECT r.message_id, u.nama 
+            FROM project_discussion_reads r
+            JOIN users u ON r.user_id = u.id
+            WHERE r.message_id IN (SELECT id FROM project_discussions WHERE project_id = ?)
+        `, [projectId]);
+
+        const readMap = {};
+        reads.forEach(r => {
+            if (!readMap[r.message_id]) readMap[r.message_id] = [];
+            readMap[r.message_id].push(r.nama);
+        });
+
+        const formatted = discussions.map(d => ({
+            ...d,
+            read_by: readMap[d.id] || []
+        }));
+
+        res.status(200).json(formatted);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Terjadi kesalahan saat mengambil diskusi proyek.' });
+    }
+};
+
+// --- FITUR MENGIRIM PESAN DISKUSI PROYEK ---
+const addProjectDiscussion = async (req, res) => {
+    const projectId = req.params.projectId;
+    const userId = req.user.id;
+    const { message, mentions } = req.body;
+
+    if (!message || message.trim() === '') {
+        return res.status(400).json({ message: 'Pesan tidak boleh kosong.' });
+    }
+
+    try {
+        const [project] = await db.query('SELECT community_id FROM projects WHERE id = ?', [projectId]);
+        if (project.length === 0) return res.status(404).json({ message: 'Proyek tidak ditemukan.' });
+        
+        const communityId = project[0].community_id;
+        const [member] = await db.query('SELECT community_role FROM community_members WHERE user_id = ? AND community_id = ?', [userId, communityId]);
+        const role = member.length > 0 ? member[0].community_role : null;
+        
+        if (role !== 'KETUA' && role !== 'SEKRETARIS') {
+            const [tasks] = await db.query('SELECT id FROM tasks WHERE project_id = ? AND assigned_to = ?', [projectId, userId]);
+            if (tasks.length === 0) {
+                return res.status(403).json({ message: 'Akses Read-Only: Anda belum ditugaskan dalam proyek ini.' });
+            }
+        }
+
+        const [result] = await db.query(
+            'INSERT INTO project_discussions (project_id, user_id, message) VALUES (?, ?, ?)',
+            [projectId, userId, message]
+        );
+
+        const [users] = await db.query('SELECT nama, foto_profile FROM users WHERE id = ?', [userId]);
+        const userName = users[0]?.nama || 'Unknown';
+
+        const newMessageObj = {
+            id: result.insertId,
+            project_id: projectId,
+            user_id: userId,
+            message: message,
+            created_at: new Date().toISOString(),
+            is_edited: 0,
+            user_name: userName,
+            read_by: []
+        };
+
+        // Emit pesan ke room proyek
+        if (req.io) {
+            req.io.to(`project_${projectId}`).emit('new_message', newMessageObj);
+        }
+
+        // Handle Mentions (Kirim notifikasi inbox)
+        if (mentions && Array.isArray(mentions) && mentions.length > 0) {
+            const [projects] = await db.query('SELECT nama_proker FROM projects WHERE id = ?', [projectId]);
+            const projectName = projects[0]?.nama_proker || 'Proyek';
+
+            for (const mentionedUserId of mentions) {
+                if (mentionedUserId === userId) continue;
+                await db.query(
+                    'INSERT INTO messages (sender_id, receiver_id, subject, content, type) VALUES (?, ?, ?, ?, ?)',
+                    [userId, mentionedUserId, `Anda ditandai di ${projectName}`, `${userName} menyebut Anda dalam obrolan proyek: "${message}"`, 'SYSTEM']
+                );
+            }
+        }
+
+        res.status(201).json({ 
+            message: 'Pesan berhasil dikirim!', 
+            discussionId: result.insertId,
+            data: newMessageObj
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Terjadi kesalahan saat mengirim pesan diskusi.' });
+    }
+};
+
+// --- FITUR EDIT PESAN DISKUSI ---
+const editProjectDiscussion = async (req, res) => {
+    const { projectId, messageId } = req.params;
+    const userId = req.user.id;
+    const { message } = req.body;
+
+    try {
+        const [existing] = await db.query('SELECT user_id FROM project_discussions WHERE id = ? AND project_id = ?', [messageId, projectId]);
+        if (existing.length === 0) return res.status(404).json({ message: 'Pesan tidak ditemukan.' });
+        if (existing[0].user_id !== userId) return res.status(403).json({ message: 'Hanya pengirim yang bisa mengedit.' });
+
+        await db.query('UPDATE project_discussions SET message = ?, is_edited = TRUE WHERE id = ?', [message, messageId]);
+
+        if (req.io) {
+            req.io.to(`project_${projectId}`).emit('message_updated', { id: Number(messageId), message });
+        }
+
+        res.status(200).json({ message: 'Pesan berhasil diubah.' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Terjadi kesalahan saat mengedit pesan.' });
+    }
+};
+
+// --- FITUR HAPUS PESAN DISKUSI ---
+const deleteProjectDiscussion = async (req, res) => {
+    const { projectId, messageId } = req.params;
+    const userId = req.user.id;
+
+    try {
+        const [existing] = await db.query('SELECT user_id FROM project_discussions WHERE id = ? AND project_id = ?', [messageId, projectId]);
+        if (existing.length === 0) return res.status(404).json({ message: 'Pesan tidak ditemukan.' });
+        
+        // Hanya pengirim atau ketua komunitas yang bisa menghapus (untuk sederhana, batasi ke pengirim dulu)
+        if (existing[0].user_id !== userId) return res.status(403).json({ message: 'Hanya pengirim yang bisa menghapus.' });
+
+        await db.query('DELETE FROM project_discussions WHERE id = ?', [messageId]);
+
+        if (req.io) {
+            req.io.to(`project_${projectId}`).emit('message_deleted', { id: Number(messageId) });
+        }
+
+        res.status(200).json({ message: 'Pesan berhasil dihapus.' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Terjadi kesalahan saat menghapus pesan.' });
+    }
+};
+
+// --- FITUR MARK AS READ ---
+const markDiscussionAsRead = async (req, res) => {
+    const { projectId } = req.params;
+    const userId = req.user.id;
+    const { messageIds } = req.body; // Array of message IDs that have been read
+
+    if (!messageIds || !Array.isArray(messageIds) || messageIds.length === 0) {
+        return res.status(400).json({ message: 'Daftar pesan kosong.' });
+    }
+
+    try {
+        // Prepare bulk insert ignoring duplicates
+        const values = messageIds.map(id => [id, userId]);
+        await db.query('INSERT IGNORE INTO project_discussion_reads (message_id, user_id) VALUES ?', [values]);
+
+        const [users] = await db.query('SELECT nama FROM users WHERE id = ?', [userId]);
+        const userName = users[0]?.nama;
+
+        if (req.io) {
+            req.io.to(`project_${projectId}`).emit('message_read', { messageIds, userName, userId });
+        }
+
+        res.status(200).json({ message: 'Pesan ditandai telah dibaca.' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Terjadi kesalahan saat menandai pesan.' });
+    }
+};
+
 module.exports = {
     createProject,
     getProjectsByCommunity,
@@ -216,5 +410,10 @@ module.exports = {
     deleteProject,
     createTask,
     updateTaskStatus,
-    getProjectBoard
+    getProjectBoard,
+    getProjectDiscussions,
+    addProjectDiscussion,
+    editProjectDiscussion,
+    deleteProjectDiscussion,
+    markDiscussionAsRead
 };

@@ -52,7 +52,9 @@ const getAllCommunities = async (req, res) => {
         const [communities] = await db.query(`
             SELECT c.*,
                 (SELECT COUNT(*) FROM community_members cm WHERE cm.community_id = c.id AND cm.status_keanggotaan = 'AKTIF') as memberCount,
-                (SELECT COUNT(*) FROM projects p WHERE p.community_id = c.id) as projectCount
+                (SELECT COUNT(*) FROM projects p WHERE p.community_id = c.id) as projectCount,
+                (SELECT AVG(rating) FROM community_reviews cr WHERE cr.community_id = c.id) as avgRating,
+                (SELECT COUNT(rating) FROM community_reviews cr WHERE cr.community_id = c.id) as reviewCount
             FROM communities c
             WHERE c.approval_status = 'DISETUJUI' OR c.approval_status = 'TIDAK_ADA'
             ORDER BY c.created_at DESC
@@ -66,6 +68,8 @@ const getAllCommunities = async (req, res) => {
             logo: c.logo,
             memberCount: c.memberCount,
             projectCount: c.projectCount,
+            avgRating: c.avgRating,
+            reviewCount: c.reviewCount,
             created_at: c.created_at
         }));
 
@@ -81,7 +85,9 @@ const getTopCommunities = async (req, res) => {
     try {
         const [topCommunities] = await db.query(`
             SELECT c.id, c.nama_komunitas, c.deskripsi, c.logo,
-                   COUNT(p.id) AS completed_projects
+                   COUNT(p.id) AS completed_projects,
+                   (SELECT AVG(rating) FROM community_reviews cr WHERE cr.community_id = c.id) as avgRating,
+                   (SELECT COUNT(rating) FROM community_reviews cr WHERE cr.community_id = c.id) as reviewCount
             FROM communities c
             LEFT JOIN projects p ON c.id = p.community_id 
                                  AND p.progress = 100 
@@ -111,7 +117,9 @@ const getUserCommunities = async (req, res) => {
                 SELECT c.id, c.nama_komunitas, c.deskripsi, c.logo, c.created_at, c.approval_status,
                     'PEMBINA' as community_role, 'AKTIF' as status_keanggotaan,
                     (SELECT COUNT(*) FROM community_members cm2 WHERE cm2.community_id = c.id AND cm2.status_keanggotaan = 'AKTIF') as memberCount,
-                    (SELECT COUNT(*) FROM projects p WHERE p.community_id = c.id) as projectCount
+                    (SELECT COUNT(*) FROM projects p WHERE p.community_id = c.id) as projectCount,
+                    (SELECT AVG(rating) FROM community_reviews cr WHERE cr.community_id = c.id) as avgRating,
+                    (SELECT COUNT(rating) FROM community_reviews cr WHERE cr.community_id = c.id) as reviewCount
                 FROM communities c
                 WHERE c.dosen_pembina_id = ?
                 ORDER BY c.created_at DESC
@@ -121,7 +129,9 @@ const getUserCommunities = async (req, res) => {
                 SELECT c.id, c.nama_komunitas, c.deskripsi, c.logo, c.created_at, c.approval_status,
                     cm.community_role, cm.status_keanggotaan,
                     (SELECT COUNT(*) FROM community_members cm2 WHERE cm2.community_id = c.id AND cm2.status_keanggotaan = 'AKTIF') as memberCount,
-                    (SELECT COUNT(*) FROM projects p WHERE p.community_id = c.id) as projectCount
+                    (SELECT COUNT(*) FROM projects p WHERE p.community_id = c.id) as projectCount,
+                    (SELECT AVG(rating) FROM community_reviews cr WHERE cr.community_id = c.id) as avgRating,
+                    (SELECT COUNT(rating) FROM community_reviews cr WHERE cr.community_id = c.id) as reviewCount
                 FROM community_members cm
                 JOIN communities c ON cm.community_id = c.id
                 WHERE cm.user_id = ? AND cm.status_keanggotaan IN ('AKTIF', 'MENUNGGU_SELEKSI')
@@ -136,6 +146,8 @@ const getUserCommunities = async (req, res) => {
             logo: c.logo,
             memberCount: c.memberCount,
             projectCount: c.projectCount,
+            avgRating: c.avgRating,
+            reviewCount: c.reviewCount,
             community_role: c.community_role,
             status_keanggotaan: c.status_keanggotaan,
             approval_status: c.approval_status,
@@ -199,6 +211,13 @@ const getCommunityById = async (req, res) => {
             ORDER BY n.created_at DESC
         `, [communityId]);
 
+        // 4.6 Ambil data rating
+        const [ratingData] = await db.query(`
+            SELECT AVG(rating) as avgRating, COUNT(rating) as reviewCount
+            FROM community_reviews
+            WHERE community_id = ?
+        `, [communityId]);
+
         // 5. Hitung total budget, spent, dan remaining
         let totalBudget = 0;
         let totalSpent = 0;
@@ -249,6 +268,8 @@ const getCommunityById = async (req, res) => {
             status: community[0].status,
             upgrade_status: community[0].upgrade_status,
             created_at: community[0].created_at,
+            avgRating: ratingData[0].avgRating || 0,
+            reviewCount: ratingData[0].reviewCount || 0,
             members,
             memberCount: members.length,
             projects,
@@ -421,6 +442,76 @@ const updateCommunity = async (req, res) => {
     }
 };
 
+// --- FITUR RATING & ULASAN KOMUNITAS ---
+const addOrUpdateReview = async (req, res) => {
+    const communityId = req.params.id;
+    const userId = req.user.id;
+    const { rating, comment } = req.body;
+
+    const ratingVal = parseInt(rating, 10);
+    if (isNaN(ratingVal) || ratingVal < 1 || ratingVal > 5) {
+        return res.status(400).json({ message: 'Rating harus berupa angka 1 sampai 5.' });
+    }
+
+    try {
+        // Cek apakah user adalah anggota AKTIF
+        const [membership] = await db.query(
+            'SELECT * FROM community_members WHERE user_id = ? AND community_id = ? AND status_keanggotaan = "AKTIF"',
+            [userId, communityId]
+        );
+
+        if (membership.length === 0) {
+            return res.status(403).json({ message: 'Akses ditolak! Hanya anggota aktif yang dapat mengulas komunitas ini.' });
+        }
+
+        // Insert atau Update jika sudah pernah mereview (ON DUPLICATE KEY UPDATE)
+        await db.query(`
+            INSERT INTO community_reviews (community_id, user_id, rating, comment)
+            VALUES (?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE rating = VALUES(rating), comment = VALUES(comment), updated_at = CURRENT_TIMESTAMP
+        `, [communityId, userId, ratingVal, comment]);
+
+        res.status(200).json({ message: 'Ulasan berhasil disimpan.' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Terjadi kesalahan saat menyimpan ulasan.' });
+    }
+};
+
+const getCommunityReviews = async (req, res) => {
+    const communityId = req.params.id;
+    try {
+        const [reviews] = await db.query(`
+            SELECT cr.rating, cr.comment, cr.created_at, cr.updated_at, u.nama, u.id as user_id
+            FROM community_reviews cr
+            JOIN users u ON cr.user_id = u.id
+            WHERE cr.community_id = ?
+            ORDER BY cr.created_at DESC
+        `, [communityId]);
+        
+        // Cek user yang login untuk tau ulasan mana miliknya
+        const currentUserId = req.user ? req.user.id : null;
+        let userReview = null;
+        const otherReviews = [];
+
+        reviews.forEach(r => {
+            if (r.user_id === currentUserId) {
+                userReview = r;
+            } else {
+                otherReviews.push(r);
+            }
+        });
+
+        res.status(200).json({
+            userReview,
+            reviews: otherReviews
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Terjadi kesalahan saat mengambil ulasan.' });
+    }
+};
+
 module.exports = {
     createCommunity,
     getAllCommunities,
@@ -429,5 +520,7 @@ module.exports = {
     generateReport,
     getTopCommunities,
     updateMemberRating,
-    updateCommunity
+    updateCommunity,
+    addOrUpdateReview,
+    getCommunityReviews
 };

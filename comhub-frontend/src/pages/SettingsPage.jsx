@@ -322,16 +322,17 @@ export function SettingsPage({ user, token, selectedCommunity, userRoleInSelecte
       {showCropModal && (
         <CropModal 
           imageSrc={cropSrc} 
-          onCropComplete={(cropped) => { cropCallbackRef.current(cropped); setShowCropModal(false) }} 
-          onClose={() => setShowCropModal(false)} 
+          onCropDone={(cropped) => { cropCallbackRef.current(cropped); setShowCropModal(false) }} 
+          onCancel={() => setShowCropModal(false)} 
         />
       )}
 
       {showCommCropModal && (
         <CropModal 
           imageSrc={commCropSrc} 
-          onCropComplete={(cropped) => { commCropCallbackRef.current(cropped); setShowCommCropModal(false) }} 
-          onClose={() => setShowCommCropModal(false)} 
+          aspect={1}
+          onCropDone={(cropped) => { commCropCallbackRef.current(cropped); setShowCommCropModal(false) }} 
+          onCancel={() => setShowCommCropModal(false)} 
         />
       )}
     </div>

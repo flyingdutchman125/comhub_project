@@ -11,6 +11,10 @@ export function CommunityDetailPage({ community, onBack }) {
   const [selectedNews, setSelectedNews] = useState(null)
   const [showDetailModal, setShowDetailModal] = useState(false)
 
+  const [reviewsData, setReviewsData] = useState({ userReview: null, reviews: [] })
+  const [reviewFormData, setReviewFormData] = useState({ rating: 5, comment: '' })
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false)
+
   // Fetch data real dari API
   const fetchDetail = useCallback(async () => {
     try {
@@ -27,9 +31,52 @@ export function CommunityDetailPage({ community, onBack }) {
     }
   }, [community.id, token])
 
+  const fetchReviews = useCallback(async () => {
+    try {
+      const res = await fetch(`http://localhost:3000/api/communities/${community.id}/reviews`, {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setReviewsData(data)
+        if (data.userReview) {
+          setReviewFormData({ rating: data.userReview.rating, comment: data.userReview.comment || '' })
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch reviews', err)
+    }
+  }, [community.id, token])
+
   useEffect(() => {
     fetchDetail()
-  }, [fetchDetail])
+    fetchReviews()
+  }, [fetchDetail, fetchReviews])
+
+  const handleReviewSubmit = async (e) => {
+    e.preventDefault()
+    setIsSubmittingReview(true)
+    try {
+      const res = await fetch(`http://localhost:3000/api/communities/${community.id}/reviews`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(reviewFormData)
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.message || 'Gagal mengirim ulasan')
+      
+      Swal.fire({ title: 'Berhasil', text: data.message, icon: 'success', background: '#0f172a', color: '#fff', confirmButtonColor: '#06b6d4' })
+      fetchReviews()
+      fetchDetail()
+    } catch (err) {
+      Swal.fire({ title: 'Gagal', text: err.message, icon: 'error', background: '#0f172a', color: '#fff', confirmButtonColor: '#06b6d4' })
+    } finally {
+      setIsSubmittingReview(false)
+    }
+  }
 
   const handleJoinCommunity = async () => {
     setIsJoining(true)
@@ -182,12 +229,19 @@ export function CommunityDetailPage({ community, onBack }) {
               <button onClick={onBack} className="mb-4 inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-400 hover:bg-slate-800 hover:text-white transition">
                 ← Kembali
               </button>
-              <h1 className="text-3xl font-bold text-white flex items-center gap-3">
+              <h1 className="text-3xl font-bold text-white flex items-center gap-3 flex-wrap">
                 {detail?.name}
                 {detail?.status === 'UKM' && (
                   <span className="text-xs px-2 py-1 bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 rounded">
                     UKM Resmi
                   </span>
+                )}
+                {detail?.avgRating !== undefined && (
+                  <div className="flex items-center gap-1.5 rounded-full bg-slate-800/80 px-3 py-1 text-base ml-2 border border-slate-700">
+                    <span className="text-amber-400">⭐</span>
+                    <span className="font-bold text-slate-200">{Number(detail.avgRating).toFixed(1)}</span>
+                    <span className="text-xs text-slate-500">({detail.reviewCount})</span>
+                  </div>
                 )}
               </h1>
               <div className="flex items-center gap-2 mt-2 flex-wrap">
@@ -351,6 +405,79 @@ export function CommunityDetailPage({ community, onBack }) {
                     </div>
                   ))}
                 </div>
+              </div>
+            </section>
+
+            {/* Ulasan & Rating Komunitas */}
+            <section className="rounded-[2rem] border border-slate-800 bg-slate-900/90 p-6 shadow-lg shadow-slate-950/10">
+              <div className="mb-6">
+                <h2 className="text-2xl font-bold text-white">⭐ Ulasan & Rating</h2>
+                <p className="mt-1 text-slate-400">Apa kata anggota tentang komunitas ini</p>
+              </div>
+
+              {hasJoined && joinStatus === 'AKTIF' && (
+                <div className="mb-8 rounded-xl border border-slate-700 bg-slate-800/50 p-5">
+                  <h3 className="text-lg font-semibold text-white mb-3">{reviewsData.userReview ? 'Ulasan Anda' : 'Beri Ulasan'}</h3>
+                  <form onSubmit={handleReviewSubmit} className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-300 mb-2">Rating</label>
+                      <div className="flex items-center gap-2">
+                        {[1, 2, 3, 4, 5].map(star => (
+                          <button
+                            key={star}
+                            type="button"
+                            onClick={() => setReviewFormData(prev => ({ ...prev, rating: star }))}
+                            className={`text-2xl transition hover:scale-110 ${star <= reviewFormData.rating ? 'text-amber-400' : 'text-slate-600'}`}
+                          >
+                            ★
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-300 mb-2">Komentar (Opsional)</label>
+                      <textarea
+                        value={reviewFormData.comment}
+                        onChange={(e) => setReviewFormData(prev => ({ ...prev, comment: e.target.value }))}
+                        className="w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-white focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                        rows={3}
+                        placeholder="Bagikan pengalaman Anda di komunitas ini..."
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={isSubmittingReview}
+                      className="rounded-lg bg-cyan-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-500 transition disabled:opacity-50"
+                    >
+                      {isSubmittingReview ? 'Menyimpan...' : (reviewsData.userReview ? 'Perbarui Ulasan' : 'Kirim Ulasan')}
+                    </button>
+                  </form>
+                </div>
+              )}
+
+              <div className="space-y-4">
+                {reviewsData.reviews.length === 0 && !reviewsData.userReview ? (
+                  <p className="text-center text-slate-400 py-4">Belum ada ulasan</p>
+                ) : (
+                  [...(reviewsData.userReview ? [reviewsData.userReview] : []), ...reviewsData.reviews].map((review, idx) => (
+                    <div key={idx} className="rounded-xl border border-slate-800 bg-slate-950/70 p-4">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <p className="font-medium text-white">
+                            {review.nama} {review.user_id === reviewsData.userReview?.user_id && <span className="text-xs text-cyan-400 font-normal ml-1">(Anda)</span>}
+                          </p>
+                          <div className="flex text-amber-400 text-sm">
+                            {'★'.repeat(review.rating)}{'☆'.repeat(5 - review.rating)}
+                          </div>
+                        </div>
+                        <span className="text-xs text-slate-500">
+                          {new Date(review.updated_at || review.created_at).toLocaleDateString('id-ID')}
+                        </span>
+                      </div>
+                      {review.comment && <p className="text-slate-300 text-sm mt-2">{review.comment}</p>}
+                    </div>
+                  ))
+                )}
               </div>
             </section>
           </div>

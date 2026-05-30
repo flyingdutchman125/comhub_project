@@ -7,7 +7,12 @@ const {
     deleteProject,
     createTask,
     updateTaskStatus,
-    getProjectBoard
+    getProjectBoard,
+    getProjectDiscussions,
+    addProjectDiscussion,
+    editProjectDiscussion,
+    deleteProjectDiscussion,
+    markDiscussionAsRead
 } = require('../controllers/projectController');
 const { verifyToken } = require('../middleware/authMiddleware');
 
@@ -31,5 +36,20 @@ router.put('/tasks/:taskId/status', verifyToken, updateTaskStatus);
 
 // Endpoint: Melihat Kanban Board & Progress Bar
 router.get('/projects/:projectId/board', verifyToken, getProjectBoard);
+
+// Endpoint: Melihat Diskusi Forum Proyek
+router.get('/projects/:projectId/discussions', verifyToken, getProjectDiscussions);
+
+// Endpoint: Mengirim Pesan Diskusi Forum Proyek
+router.post('/projects/:projectId/discussions', verifyToken, addProjectDiscussion);
+
+// Endpoint: Edit Pesan Diskusi Forum Proyek
+router.put('/projects/:projectId/discussions/:messageId', verifyToken, editProjectDiscussion);
+
+// Endpoint: Hapus Pesan Diskusi Forum Proyek
+router.delete('/projects/:projectId/discussions/:messageId', verifyToken, deleteProjectDiscussion);
+
+// Endpoint: Mark Messages as Read
+router.post('/projects/:projectId/discussions/read', verifyToken, markDiscussionAsRead);
 
 module.exports = router;
