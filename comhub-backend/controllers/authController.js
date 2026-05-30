@@ -96,5 +96,38 @@ const logout = async (req, res) => {
     // Untuk implementasi sederhana, kita hanya mengirim respon sukses
     res.status(200).json({ message: 'Logout berhasil!' });
 };
+// --- FITUR GANTI PASSWORD ---
+const changePassword = async (req, res) => {
+    const userId = req.user.id;
+    const { oldPassword, newPassword } = req.body;
 
-module.exports = { register, login, logout };
+    try {
+        // 1. Ambil data user saat ini
+        const [users] = await db.query('SELECT password FROM users WHERE id = ?', [userId]);
+        if (users.length === 0) {
+            return res.status(404).json({ message: 'User tidak ditemukan' });
+        }
+
+        const user = users[0];
+
+        // 2. Bandingkan password lama
+        const isPasswordMatch = await bcrypt.compare(oldPassword, user.password);
+        if (!isPasswordMatch) {
+            return res.status(401).json({ message: 'Password lama salah!' });
+        }
+
+        // 3. Hash password baru
+        const salt = await bcrypt.genSalt(10);
+        const hashedNewPassword = await bcrypt.hash(newPassword, salt);
+
+        // 4. Update password di database
+        await db.query('UPDATE users SET password = ? WHERE id = ?', [hashedNewPassword, userId]);
+
+        res.status(200).json({ message: 'Password berhasil diperbarui!' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Terjadi kesalahan pada server saat mengganti password' });
+    }
+};
+
+module.exports = { register, login, logout, changePassword };

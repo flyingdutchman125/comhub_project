@@ -286,11 +286,11 @@ const getAttendanceSummary = async (req, res) => {
         // Query agregasi persentase absensi
         const [summary] = await db.query(`
             SELECT u.id as user_id, u.nama, cm.community_role,
-                COUNT(a.id) as total_sessions,
-                SUM(CASE WHEN a.status = 'HADIR' THEN 1 ELSE 0 END) as hadir_count,
-                SUM(CASE WHEN a.status = 'SAKIT' THEN 1 ELSE 0 END) as sakit_count,
-                SUM(CASE WHEN a.status = 'IZIN' THEN 1 ELSE 0 END) as izin_count,
-                SUM(CASE WHEN a.status = 'ALFA' THEN 1 ELSE 0 END) as alfa_count
+                CAST(COUNT(a.id) AS SIGNED) as total_sessions,
+                CAST(COALESCE(SUM(CASE WHEN a.status = 'HADIR' THEN 1 ELSE 0 END), 0) AS SIGNED) as hadir_count,
+                CAST(COALESCE(SUM(CASE WHEN a.status = 'SAKIT' THEN 1 ELSE 0 END), 0) AS SIGNED) as sakit_count,
+                CAST(COALESCE(SUM(CASE WHEN a.status = 'IZIN' THEN 1 ELSE 0 END), 0) AS SIGNED) as izin_count,
+                CAST(COALESCE(SUM(CASE WHEN a.status = 'ALFA' THEN 1 ELSE 0 END), 0) AS SIGNED) as alfa_count
             FROM community_members cm
             JOIN users u ON cm.user_id = u.id
             LEFT JOIN attendances a ON u.id = a.user_id AND a.session_id IN (
@@ -301,7 +301,16 @@ const getAttendanceSummary = async (req, res) => {
             ORDER BY u.nama ASC
         `, [communityId, communityId]);
 
-        res.status(200).json(summary);
+        const formattedSummary = summary.map(item => ({
+            ...item,
+            total_sessions: Number(item.total_sessions) || 0,
+            hadir_count: Number(item.hadir_count) || 0,
+            sakit_count: Number(item.sakit_count) || 0,
+            izin_count: Number(item.izin_count) || 0,
+            alfa_count: Number(item.alfa_count) || 0,
+        }));
+
+        res.status(200).json(formattedSummary);
     } catch (error) {
         console.error('Error in getAttendanceSummary:', error);
         res.status(500).json({ message: 'Terjadi kesalahan saat memuat rekap absensi.' });

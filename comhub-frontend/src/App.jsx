@@ -14,6 +14,7 @@ import { CommunityNewsPage } from './pages/CommunityNewsPage'
 import CropModal from './components/CropModal'
 import { AttendancePage } from './pages/AttendancePage'
 import { ApprovalPage } from './pages/ApprovalPage'
+import { SettingsPage } from './pages/SettingsPage'
 
 import { CreateCommunityModal } from './components/CreateCommunityModal'
 import { NewsFormModal } from './components/NewsFormModal'
@@ -668,6 +669,8 @@ function App() {
             <ApprovalPage token={token} userRole={user?.role} />
           ) : activeTab === 'Portofolio' ? (
             <PortfolioPage />
+          ) : activeTab === 'Settings' ? (
+            <SettingsPage user={user} token={token} selectedCommunity={selectedCommunity} userRoleInSelected={userRoleInSelected} onProfileUpdated={() => window.location.reload()} />
           ) : activeTab !== 'Dashboard' ? (
             <section className="mt-8 rounded-[2rem] border border-slate-800 bg-slate-900/90 p-8">
               <h3 className="text-2xl font-semibold text-white">{activeTab}</h3>

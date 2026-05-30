@@ -386,6 +386,40 @@ const updateMemberRating = async (req, res) => {
     }
 };
 
+// --- FITUR UPDATE KOMUNITAS (HANYA KETUA/SEKRETARIS) ---
+const updateCommunity = async (req, res) => {
+    const communityId = req.params.id;
+    const userId = req.user.id;
+    const { nama_komunitas, deskripsi, logo } = req.body;
+
+    try {
+        // 1. Otorisasi: Pastikan user adalah KETUA atau SEKRETARIS di komunitas tersebut
+        const [checkRole] = await db.query(
+            'SELECT community_role FROM community_members WHERE user_id = ? AND community_id = ? AND status_keanggotaan = "AKTIF"',
+            [userId, communityId]
+        );
+
+        if (checkRole.length === 0 || !['KETUA', 'SEKRETARIS'].includes(checkRole[0].community_role)) {
+            return res.status(403).json({ message: 'Akses ditolak! Hanya Ketua atau Sekretaris yang dapat memperbarui pengaturan komunitas.' });
+        }
+
+        // 2. Lakukan update
+        const [result] = await db.query(
+            'UPDATE communities SET nama_komunitas = ?, deskripsi = ?, logo = ? WHERE id = ?',
+            [nama_komunitas, deskripsi, logo, communityId]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: 'Komunitas tidak ditemukan.' });
+        }
+
+        res.status(200).json({ message: 'Pengaturan komunitas berhasil diperbarui!' });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Terjadi kesalahan saat memperbarui komunitas.' });
+    }
+};
 
 module.exports = {
     createCommunity,
@@ -394,6 +428,6 @@ module.exports = {
     getCommunityById,
     generateReport,
     getTopCommunities,
-    updateMemberRating
+    updateMemberRating,
+    updateCommunity
 };
-

@@ -8,7 +8,8 @@ const {
     getCommunityById,
     generateReport,
     getTopCommunities,
-    updateMemberRating
+    updateMemberRating,
+    updateCommunity
 } = require('../controllers/communityController');
 
 const {
@@ -40,6 +41,7 @@ router.get('/pending/approvals', verifyToken, getPendingCommunities);
 router.get('/', getAllCommunities);
 router.post('/', verifyToken, createCommunity);
 router.get('/:id', verifyToken, getCommunityById);
+router.put('/:id', verifyToken, updateCommunity);
 router.post('/:id/join', verifyToken, joinCommunity);
 
 // Approval Routes (DOSEN & KEMAHASISWAAN)

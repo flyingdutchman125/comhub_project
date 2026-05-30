@@ -339,8 +339,8 @@ export function AttendancePage({ communityId, token, isReadOnly = false, current
         let perfectCount = 0
 
         summary.forEach(m => {
-            const total = m.total_sessions || 0
-            const hadir = m.hadir_count || 0
+            const total = Number(m.total_sessions) || 0
+            const hadir = Number(m.hadir_count) || 0
             if (total > 0) {
                 const rate = (hadir / total) * 100
                 if (rate === 100) perfectCount++
@@ -613,8 +613,8 @@ export function AttendancePage({ communityId, token, isReadOnly = false, current
                                     </tr>
                                 ) : (
                                     filteredSummary.map(m => {
-                                        const total = m.total_sessions || 0
-                                        const hadir = m.hadir_count || 0
+                                        const total = Number(m.total_sessions) || 0
+                                        const hadir = Number(m.hadir_count) || 0
                                         const rate = total === 0 ? 0 : Math.round((hadir / total) * 100)
 
                                         return (
