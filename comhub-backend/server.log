@@ -1,6 +1,0 @@
-◇ injected env (6) from .env // tip: ⌁ auth for agents [www.vestauth.com]
-◇ injected env (0) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
-◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
-◇ injected env (0) from .env // tip: ⌁ auth for agents [www.vestauth.com]
-Server ComHub berjalan di http://localhost:3000
-Berhasil terhubung ke database MySQL ComHub!
