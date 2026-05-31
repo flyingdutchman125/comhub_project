@@ -19,6 +19,9 @@ import { SettingsPage } from './pages/SettingsPage'
 import { CreateCommunityModal } from './components/CreateCommunityModal'
 import { NewsFormModal } from './components/NewsFormModal'
 import { NewsDetailModal } from './components/NewsDetailModal'
+import NotificationCenter from './components/NotificationCenter'
+import TaskInbox from './components/TaskInbox'
+import { io } from 'socket.io-client'
 
 function App() {
   const [authPage, setAuthPage] = useState('login')
@@ -37,6 +40,21 @@ function App() {
   const [searchQuery, setSearchQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [showNotifications, setShowNotifications] = useState(false)
+  const [showInboxModal, setShowInboxModal] = useState(false)
+  const [showTaskInbox, setShowTaskInbox] = useState(false)
+  const [globalSocket, setGlobalSocket] = useState(null)
+
+  useEffect(() => {
+    if (token && user) {
+      const socket = io(import.meta.env.VITE_API_URL || 'http://localhost:3000')
+      socket.emit('join_user_notifications', user.id)
+      if (selectedCommunity) {
+        socket.emit('join_community_notifications', selectedCommunity.id)
+      }
+      setGlobalSocket(socket)
+      return () => socket.disconnect()
+    }
+  }, [token, user, selectedCommunity])
 
   useEffect(() => {
     setCurrentPage(1)
@@ -437,11 +455,20 @@ function App() {
                 </div>
               )}
 
+              {/* Task Inbox */}
+              <button 
+                onClick={() => setShowTaskInbox(true)}
+                className="relative rounded-full p-2 text-slate-300 hover:bg-slate-700 hover:text-white transition bg-slate-800"
+                title="Kotak Tugas"
+              >
+                📋
+              </button>
+
               {/* Kotak Pesan */}
               <button 
-                onClick={() => setActiveTab('Kotak Pesan')}
+                onClick={() => setShowInboxModal(true)}
                 className={`relative rounded-full p-2 text-slate-300 transition ${
-                  activeTab === 'Kotak Pesan' 
+                  showInboxModal 
                     ? 'bg-cyan-500 text-slate-950 font-bold' 
                     : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
                 }`}
@@ -453,8 +480,9 @@ function App() {
               {/* Notifications */}
               <div className="relative">
                 <button 
-                  onClick={() => setShowNotifications(!showNotifications)}
+                  onClick={() => setShowNotifications(true)}
                   className="relative rounded-full bg-slate-800 p-2 text-slate-300 hover:bg-slate-700 hover:text-white transition"
+                  title="Notifikasi"
                 >
                   🔔
                   <span className="absolute right-1 top-1 flex h-2.5 w-2.5">
@@ -462,32 +490,6 @@ function App() {
                     <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
                   </span>
                 </button>
-
-                {showNotifications && (
-                  <div className="absolute right-0 mt-2 w-80 origin-top-right rounded-2xl border border-slate-700 bg-slate-800 p-4 shadow-xl z-50">
-                    <div className="flex items-center justify-between mb-3 border-b border-slate-700 pb-2">
-                      <h4 className="text-sm font-semibold text-white">Notifikasi</h4>
-                      <span className="text-xs text-cyan-400 cursor-pointer hover:text-cyan-300">Tandai semua dibaca</span>
-                    </div>
-                    <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
-                      <div className="rounded-xl bg-slate-900/50 p-3 hover:bg-slate-900 transition cursor-pointer">
-                        <div className="flex justify-between items-start">
-                          <p className="text-sm font-medium text-white">Selamat datang!</p>
-                          <span className="h-2 w-2 rounded-full bg-cyan-500 mt-1.5"></span>
-                        </div>
-                        <p className="text-xs text-slate-300 mt-1">Mulai dengan membuat atau bergabung ke komunitas di ComHub.</p>
-                        <p className="text-[10px] text-slate-500 mt-2">Baru saja</p>
-                      </div>
-                      <div className="rounded-xl bg-slate-900/50 p-3 hover:bg-slate-900 transition cursor-pointer">
-                        <div className="flex justify-between items-start">
-                          <p className="text-sm font-medium text-white">Lengkapi Profil Anda</p>
-                        </div>
-                        <p className="text-xs text-slate-300 mt-1">Tambahkan informasi profil Anda untuk dikenali anggota lain.</p>
-                        <p className="text-[10px] text-slate-500 mt-2">2 jam yang lalu</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
           </header>
@@ -743,6 +745,26 @@ function App() {
         isOpen={showNewsDetailModal} 
         onClose={() => setShowNewsDetailModal(false)} 
         news={selectedNews} 
+      />
+      
+      <NotificationCenter 
+        token={token} 
+        socket={globalSocket} 
+        isOpen={showNotifications} 
+        onClose={() => setShowNotifications(false)} 
+      />
+      
+      <TaskInbox 
+        token={token} 
+        isOpen={showTaskInbox} 
+        onClose={() => setShowTaskInbox(false)} 
+      />
+
+      <InboxPage 
+        token={token} 
+        currentUser={user} 
+        isOpen={showInboxModal} 
+        onClose={() => setShowInboxModal(false)} 
       />
     </div>
   )

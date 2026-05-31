@@ -14,7 +14,7 @@ const userRoutes = require('./routes/userRoutes');
 const newsRoutes = require('./routes/newsRoutes');
 const attendanceRoutes = require('./routes/attendanceRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
-const taskRoutes = require('./routes/taskRoutes');
+
 
 const app = express();
 const server = http.createServer(app);
@@ -47,7 +47,6 @@ app.use('/api/auth', authRoutes);
 app.use('/api/communities', communityRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/notifications', notificationRoutes);
-app.use('/api/tasks', taskRoutes);
 app.use('/api', projectRoutes);
 app.use('/api', financeRoutes);
 app.use('/api/users', userRoutes);

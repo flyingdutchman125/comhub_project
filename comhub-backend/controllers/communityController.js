@@ -91,8 +91,6 @@ const getTopCommunities = async (req, res) => {
             FROM communities c
             LEFT JOIN projects p ON c.id = p.community_id 
                                  AND p.progress = 100 
-                                 AND MONTH(p.end_date) = MONTH(CURRENT_DATE()) 
-                                 AND YEAR(p.end_date) = YEAR(CURRENT_DATE())
             WHERE c.approval_status = 'DISETUJUI' OR c.approval_status = 'TIDAK_ADA'
             GROUP BY c.id
             ORDER BY completed_projects DESC

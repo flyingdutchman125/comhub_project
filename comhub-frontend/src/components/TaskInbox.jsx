@@ -3,29 +3,35 @@ import Swal from 'sweetalert2';
 import './TaskInbox.css';
 
 const TaskInbox = ({ token, isOpen, onClose }) => {
+    const [allTasks, setAllTasks] = useState([]);
     const [tasks, setTasks] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [filter, setFilter] = useState('PENDING'); // PENDING, IN_PROGRESS, COMPLETED
+    const [filter, setFilter] = useState('TODO'); // TODO, IN_PROGRESS, DONE
     const [expandedTask, setExpandedTask] = useState(null);
 
     useEffect(() => {
         if (isOpen) {
             fetchMyTasks();
         }
-    }, [isOpen, filter]);
+    }, [isOpen]);
+
+    useEffect(() => {
+        // Filter tasks whenever filter or allTasks change
+        setTasks(allTasks.filter(task => task.status === filter));
+    }, [filter, allTasks]);
 
     const fetchMyTasks = async () => {
         setLoading(true);
         try {
-            const query = `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/tasks/my/all?status=${filter}&limit=20`;
+            const query = `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/users/tasks`;
             
             const response = await fetch(query, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
             const data = await response.json();
-            if (data.success) {
-                setTasks(data.data);
+            if (Array.isArray(data)) {
+                setAllTasks(data);
             }
         } catch (error) {
             console.error('Error fetching tasks:', error);
@@ -49,74 +55,16 @@ const TaskInbox = ({ token, isOpen, onClose }) => {
             );
 
             const data = await response.json();
-            if (data.success) {
+            if (response.ok) {
                 Swal.fire('Sukses!', 'Status tugas berhasil diperbarui', 'success');
                 fetchMyTasks();
+            } else {
+                Swal.fire('Error', data.message || 'Gagal memperbarui status', 'error');
             }
         } catch (error) {
             console.error('Error updating task:', error);
             Swal.fire('Error', 'Gagal memperbarui status', 'error');
         }
-    };
-
-    const handleAddNote = async (taskId) => {
-        const { value: note } = await Swal.fire({
-            title: 'Tambah Catatan',
-            input: 'textarea',
-            inputLabel: 'Catatan untuk tugas ini',
-            inputPlaceholder: 'Tuliskan catatan Anda...',
-            showCancelButton: true,
-            confirmButtonText: 'Simpan',
-            cancelButtonText: 'Batal'
-        });
-
-        if (note) {
-            try {
-                const response = await fetch(
-                    `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/tasks/${taskId}/note`,
-                    {
-                        method: 'PUT',
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ notes: note })
-                    }
-                );
-
-                const data = await response.json();
-                if (data.success) {
-                    Swal.fire('Sukses!', 'Catatan berhasil ditambahkan', 'success');
-                    fetchMyTasks();
-                }
-            } catch (error) {
-                console.error('Error adding note:', error);
-            }
-        }
-    };
-
-    const getPriorityBadge = (priority) => {
-        const colors = {
-            'HIGH': '#ff4444',
-            'MEDIUM': '#ff9800',
-            'LOW': '#4caf50'
-        };
-        return <span className="priority-badge" style={{ backgroundColor: colors[priority] }}>{priority}</span>;
-    };
-
-    const getStatusBadge = (status) => {
-        const statusConfig = {
-            'PENDING': { color: '#2196f3', icon: '⏳', label: 'Tertunda' },
-            'IN_PROGRESS': { color: '#ff9800', icon: '⚙️', label: 'Berjalan' },
-            'COMPLETED': { color: '#4caf50', icon: '✅', label: 'Selesai' },
-            'CANCELLED': { color: '#ccc', icon: '❌', label: 'Dibatalkan' }
-        };
-        const config = statusConfig[status] || {};
-        return (
-            <span className="status-badge" style={{ backgroundColor: config.color }}>
-                {config.icon} {config.label}
-            </span>
-        );
     };
 
     const isOverdue = (dueDate) => {
@@ -136,8 +84,8 @@ const TaskInbox = ({ token, isOpen, onClose }) => {
 
                 <div className="ti-filter">
                     <button 
-                        className={`filter-btn ${filter === 'PENDING' ? 'active' : ''}`}
-                        onClick={() => setFilter('PENDING')}
+                        className={`filter-btn ${filter === 'TODO' ? 'active' : ''}`}
+                        onClick={() => setFilter('TODO')}
                     >
                         ⏳ Tertunda
                     </button>
@@ -148,8 +96,8 @@ const TaskInbox = ({ token, isOpen, onClose }) => {
                         ⚙️ Berjalan
                     </button>
                     <button 
-                        className={`filter-btn ${filter === 'COMPLETED' ? 'active' : ''}`}
-                        onClick={() => setFilter('COMPLETED')}
+                        className={`filter-btn ${filter === 'DONE' ? 'active' : ''}`}
+                        onClick={() => setFilter('DONE')}
                     >
                         ✅ Selesai
                     </button>
@@ -171,13 +119,17 @@ const TaskInbox = ({ token, isOpen, onClose }) => {
                                     onClick={() => setExpandedTask(expandedTask === task.id ? null : task.id)}
                                 >
                                     <div className="task-title-section">
-                                        <h4>{task.title}</h4>
-                                        <span className="task-community">📍 {task.community_name}</span>
+                                        <h4>{task.judul_tugas}</h4>
+                                        <span className="task-community">📍 {task.nama_komunitas} ({task.project_name})</span>
                                     </div>
                                     <div className="task-badges">
-                                        {getPriorityBadge(task.priority)}
-                                        {getStatusBadge(task.status)}
-                                        {isOverdue(task.due_date) && (
+                                        {task.submission_status === 'APPROVED' && (
+                                            <span className="status-badge" style={{ backgroundColor: '#4caf50' }}>✅ Disetujui</span>
+                                        )}
+                                        {task.submission_status === 'REJECTED' && (
+                                            <span className="status-badge" style={{ backgroundColor: '#ff4444' }}>❌ Ditolak</span>
+                                        )}
+                                        {isOverdue(task.end_date) && task.status !== 'DONE' && (
                                             <span className="overdue-badge">⚠️ Terlambat</span>
                                         )}
                                     </div>
@@ -187,32 +139,28 @@ const TaskInbox = ({ token, isOpen, onClose }) => {
                                     <div className="task-details">
                                         <div className="task-description">
                                             <strong>Deskripsi:</strong>
-                                            <p>{task.description || 'Tidak ada deskripsi'}</p>
+                                            <p>{task.deskripsi || 'Tidak ada deskripsi'}</p>
                                         </div>
 
                                         <div className="task-metadata">
-                                            <div className="metadata-row">
-                                                <span className="label">Dari:</span>
-                                                <span>{task.assigned_by_name}</span>
-                                            </div>
-                                            {task.due_date && (
+                                            {task.end_date && (
                                                 <div className="metadata-row">
-                                                    <span className="label">Deadline:</span>
-                                                    <span>{new Date(task.due_date).toLocaleDateString('id-ID')}</span>
+                                                    <span className="label">Tenggat Proyek:</span>
+                                                    <span>{new Date(task.end_date).toLocaleDateString('id-ID')}</span>
                                                 </div>
                                             )}
-                                            {task.notes && (
+                                            {task.ketua_note && (
                                                 <div className="metadata-row">
-                                                    <span className="label">Catatan:</span>
-                                                    <span>{task.notes}</span>
+                                                    <span className="label">Catatan Ketua:</span>
+                                                    <span>{task.ketua_note}</span>
                                                 </div>
                                             )}
                                         </div>
 
                                         <div className="task-actions">
-                                            {task.status !== 'COMPLETED' && task.status !== 'CANCELLED' && (
+                                            {task.status !== 'DONE' && (
                                                 <>
-                                                    {task.status === 'PENDING' && (
+                                                    {task.status === 'TODO' && (
                                                         <button 
                                                             className="action-btn start"
                                                             onClick={() => handleUpdateStatus(task.id, 'IN_PROGRESS')}
@@ -223,17 +171,11 @@ const TaskInbox = ({ token, isOpen, onClose }) => {
                                                     {task.status === 'IN_PROGRESS' && (
                                                         <button 
                                                             className="action-btn complete"
-                                                            onClick={() => handleUpdateStatus(task.id, 'COMPLETED')}
+                                                            onClick={() => window.location.href = '/portfolio'}
                                                         >
-                                                            ✅ Tandai Selesai
+                                                            📤 Kumpulkan di Portofolio
                                                         </button>
                                                     )}
-                                                    <button 
-                                                        className="action-btn note"
-                                                        onClick={() => handleAddNote(task.id)}
-                                                    >
-                                                        📝 Tambah Catatan
-                                                    </button>
                                                 </>
                                             )}
                                         </div>

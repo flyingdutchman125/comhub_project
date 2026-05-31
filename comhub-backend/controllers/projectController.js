@@ -146,12 +146,38 @@ const deleteProject = async (req, res) => {
 const createTask = async (req, res) => {
     const projectId = req.params.projectId;
     const { judul_tugas, deskripsi, assigned_to } = req.body;
+    const userId = req.user.id; // Get creator's ID
 
     try {
         const [result] = await db.query(
             'INSERT INTO tasks (project_id, judul_tugas, deskripsi, assigned_to) VALUES (?, ?, ?, ?)',
             [projectId, judul_tugas, deskripsi, assigned_to]
         );
+
+        if (assigned_to && assigned_to !== userId) {
+            // Get project and creator info for notification
+            const [projects] = await db.query('SELECT nama_proker FROM projects WHERE id = ?', [projectId]);
+            const projectName = projects[0]?.nama_proker || 'Proyek';
+            
+            const [users] = await db.query('SELECT nama FROM users WHERE id = ?', [userId]);
+            const userName = users[0]?.nama || 'Pengurus';
+
+            await db.query(
+                'INSERT INTO messages (sender_id, receiver_id, subject, content, type) VALUES (?, ?, ?, ?, ?)',
+                [userId, assigned_to, 
+                 `Tugas Baru: ${judul_tugas}`, 
+                 `${userName} telah menugaskan Anda tugas baru "${judul_tugas}" pada proyek "${projectName}". Silakan cek Kotak Tugas Anda.`, 
+                 'SYSTEM']
+            );
+
+            if (req.io) {
+                req.io.to(`user_notifications_${assigned_to}`).emit('new_notification', {
+                    title: `Tugas Baru: ${judul_tugas}`,
+                    message: `Anda ditugaskan: ${judul_tugas} di ${projectName}`
+                });
+            }
+        }
+
         res.status(201).json({ message: 'Tugas ditambahkan ke papan To Do!', taskId: result.insertId });
     } catch (error) {
         console.error(error);
