@@ -6,6 +6,11 @@ const joinCommunity = async (req, res) => {
     const userId = req.user.id; // Mendapatkan ID mahasiswa dari token JWT
 
     try {
+        // 0. Cek role user
+        if (req.user.role === 'DOSEN' || req.user.role === 'KEMAHASISWAAN') {
+            return res.status(403).json({ message: 'Dosen Pembina dan Kemahasiswaan tidak diperkenankan untuk bergabung sebagai anggota komunitas.' });
+        }
+
         // 1. Cek apakah komunitasnya benar-benar ada
         const [community] = await db.query('SELECT * FROM communities WHERE id = ?', [communityId]);
         if (community.length === 0) {

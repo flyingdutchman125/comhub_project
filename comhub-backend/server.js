@@ -13,6 +13,8 @@ const messageRoutes = require('./routes/messageRoutes');
 const userRoutes = require('./routes/userRoutes');
 const newsRoutes = require('./routes/newsRoutes');
 const attendanceRoutes = require('./routes/attendanceRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
+const taskRoutes = require('./routes/taskRoutes');
 
 const app = express();
 const server = http.createServer(app);
@@ -44,6 +46,8 @@ app.get('/', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/communities', communityRoutes);
 app.use('/api/messages', messageRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/tasks', taskRoutes);
 app.use('/api', projectRoutes);
 app.use('/api', financeRoutes);
 app.use('/api/users', userRoutes);
@@ -58,6 +62,54 @@ io.on('connection', (socket) => {
     socket.on('join_project', (projectId) => {
         socket.join(`project_${projectId}`);
         console.log(`Socket ${socket.id} joined room: project_${projectId}`);
+    });
+
+    // Join notification room untuk user tertentu
+    socket.on('join_user_notifications', (userId) => {
+        socket.join(`user_notifications_${userId}`);
+        console.log(`Socket ${socket.id} joined notification room for user: ${userId}`);
+    });
+
+    // Join community notifications room
+    socket.on('join_community_notifications', (communityId) => {
+        socket.join(`community_notifications_${communityId}`);
+        console.log(`Socket ${socket.id} joined notification room for community: ${communityId}`);
+    });
+
+    // Send notification event
+    socket.on('send_notification', (data) => {
+        const { userId, communityId, title, message, type } = data;
+        io.to(`user_notifications_${userId}`).emit('new_notification', {
+            title,
+            message,
+            type,
+            communityId,
+            timestamp: new Date()
+        });
+    });
+
+    // Send task assignment notification
+    socket.on('task_assigned', (data) => {
+        const { userId, communityId, taskTitle, taskDescription } = data;
+        io.to(`user_notifications_${userId}`).emit('task_notification', {
+            type: 'TASK_ASSIGNED',
+            title: `Tugas Baru: ${taskTitle}`,
+            message: taskDescription,
+            communityId,
+            timestamp: new Date()
+        });
+    });
+
+    // Broadcast community change notification
+    socket.on('community_changed', (data) => {
+        const { communityId, changeType, changeDescription, changedBy } = data;
+        io.to(`community_notifications_${communityId}`).emit('community_update', {
+            type: 'COMMUNITY_CHANGE',
+            changeType,
+            description: changeDescription,
+            changedBy,
+            timestamp: new Date()
+        });
     });
 
     socket.on('disconnect', () => {

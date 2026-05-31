@@ -197,8 +197,19 @@ const applyForUKMUpgrade = async (req, res) => {
         const projectCount = projRes[0].project_count || 0;
         const hasEnoughProjects = projectCount >= 3;
 
+        // 5. Cek Rating Keaktifan Anggota (Rata-rata rating dari Ketua >= 3.0)
+        const [ratingRes] = await db.query(`
+            SELECT AVG(rating) as avg_member_rating, COUNT(rating) as rated_count
+            FROM community_members
+            WHERE community_id = ? AND status_keanggotaan = 'AKTIF' AND community_role != 'KETUA'
+        `, [communityId]);
+
+        const avgMemberRating = parseFloat(ratingRes[0].avg_member_rating || 0);
+        const ratedCount = ratingRes[0].rated_count || 0;
+        const isRatingGood = ratedCount > 0 && avgMemberRating >= 3.0;
+
         // Validasi Akhir
-        if (!isOldEnough || !isAttendanceGood || !isFinanciallyHealthy || !hasEnoughProjects) {
+        if (!isOldEnough || !isAttendanceGood || !isFinanciallyHealthy || !hasEnoughProjects || !isRatingGood) {
             return res.status(400).json({
                 message: 'Syarat belum terpenuhi',
                 checklist: {
@@ -209,7 +220,9 @@ const applyForUKMUpgrade = async (req, res) => {
                     totalIncome,
                     totalExpense,
                     hasEnoughProjects,
-                    projectCount
+                    projectCount,
+                    isRatingGood,
+                    avgMemberRating
                 }
             });
         }

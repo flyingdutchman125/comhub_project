@@ -3,7 +3,7 @@ import { useAuth } from '../AuthContext'
 import Swal from 'sweetalert2'
 
 export function CommunityDetailPage({ community, onBack }) {
-  const { token, refreshMemberships } = useAuth()
+  const { token, refreshMemberships, logout, user } = useAuth()
   const [isJoining, setIsJoining] = useState(false)
   const [detail, setDetail] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -21,7 +21,15 @@ export function CommunityDetailPage({ community, onBack }) {
       const res = await fetch(`http://localhost:3000/api/communities/${community.id}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
-      if (!res.ok) throw new Error('Gagal mengambil data komunitas')
+      if (res.status === 401 || res.status === 403) {
+        // Token expired - logout and redirect
+        logout()
+        return
+      }
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}))
+        throw new Error(errData.message || `Gagal mengambil data komunitas (${res.status})`)
+      }
       const data = await res.json()
       setDetail(data)
     } catch (err) {
@@ -29,7 +37,7 @@ export function CommunityDetailPage({ community, onBack }) {
     } finally {
       setLoading(false)
     }
-  }, [community.id, token])
+  }, [community.id, token, logout])
 
   const fetchReviews = useCallback(async () => {
     try {
@@ -121,7 +129,7 @@ export function CommunityDetailPage({ community, onBack }) {
       
       if (!res.ok) {
         if (data.checklist) {
-          const { isOldEnough, isAttendanceGood, attendancePercentage, isFinanciallyHealthy, hasEnoughProjects, projectCount } = data.checklist
+          const { isOldEnough, isAttendanceGood, attendancePercentage, isFinanciallyHealthy, hasEnoughProjects, projectCount, isRatingGood, avgMemberRating } = data.checklist
           Swal.fire({
             title: 'Syarat Upgrade Belum Terpenuhi',
             html: `
@@ -130,6 +138,7 @@ export function CommunityDetailPage({ community, onBack }) {
                 <p>${isAttendanceGood ? '✅' : '❌'} <b>Absensi Anggota:</b> ${attendancePercentage} ${isAttendanceGood ? '(Terpenuhi)' : '(Minimal 80% dalam 3 tahun)'}</p>
                 <p>${isFinanciallyHealthy ? '✅' : '❌'} <b>Kesehatan Keuangan:</b> ${isFinanciallyHealthy ? 'Pemasukan > Pengeluaran (Terpenuhi)' : 'Pemasukan harus lebih besar dari pengeluaran'}</p>
                 <p>${hasEnoughProjects ? '✅' : '❌'} <b>Program Kerja Terlaksana:</b> ${projectCount} proyek ${hasEnoughProjects ? '(Terpenuhi)' : '(Minimal 3 proyek selesai dalam 3 tahun)'}</p>
+                <p>${isRatingGood ? '✅' : '❌'} <b>Rata-rata Keaktifan Anggota:</b> ${avgMemberRating ? Number(avgMemberRating).toFixed(1) : '0'} ${isRatingGood ? '(Terpenuhi)' : '(Minimal 3.0 dari Ketua)'}</p>
               </div>
             `,
             icon: 'warning',
@@ -263,21 +272,29 @@ export function CommunityDetailPage({ community, onBack }) {
               </div>
               <p className="mt-3 text-slate-400 max-w-2xl">{detail?.description}</p>
             </div>
-            {!hasJoined && joinStatus !== 'MENUNGGU_SELEKSI' && (
-              <button onClick={handleJoinCommunity} disabled={isJoining}
-                className="rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 px-6 py-3 font-semibold text-white hover:shadow-lg hover:shadow-cyan-500/30 disabled:opacity-50 h-fit transition">
-                {isJoining ? 'Sedang bergabung...' : 'Bergabung dengan Komunitas'}
-              </button>
-            )}
-            {joinStatus === 'MENUNGGU_SELEKSI' && (
-              <div className="rounded-xl bg-amber-500/20 border border-amber-500/30 px-6 py-3 h-fit">
-                <p className="text-sm font-semibold text-amber-300">⏳ Menunggu seleksi</p>
+            {user?.role === 'DOSEN' || user?.role === 'KEMAHASISWAAN' ? (
+              <div className="rounded-xl bg-slate-800 border border-slate-700 px-6 py-3 h-fit">
+                <p className="text-sm font-semibold text-slate-400">Akses Khusus ({user?.role})</p>
               </div>
-            )}
-            {hasJoined && (
-              <div className="rounded-xl bg-emerald-500/20 border border-emerald-500/30 px-6 py-3 h-fit">
-                <p className="text-sm font-semibold text-emerald-300">✓ Anda sudah bergabung ({detail?.userRole})</p>
-              </div>
+            ) : (
+              <>
+                {!hasJoined && joinStatus !== 'MENUNGGU_SELEKSI' && (
+                  <button onClick={handleJoinCommunity} disabled={isJoining}
+                    className="rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 px-6 py-3 font-semibold text-white hover:shadow-lg hover:shadow-cyan-500/30 disabled:opacity-50 h-fit transition">
+                    {isJoining ? 'Sedang bergabung...' : 'Bergabung dengan Komunitas'}
+                  </button>
+                )}
+                {joinStatus === 'MENUNGGU_SELEKSI' && (
+                  <div className="rounded-xl bg-amber-500/20 border border-amber-500/30 px-6 py-3 h-fit">
+                    <p className="text-sm font-semibold text-amber-300">⏳ Menunggu seleksi</p>
+                  </div>
+                )}
+                {hasJoined && (
+                  <div className="rounded-xl bg-emerald-500/20 border border-emerald-500/30 px-6 py-3 h-fit">
+                    <p className="text-sm font-semibold text-emerald-300">✓ Anda sudah bergabung ({detail?.userRole})</p>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>

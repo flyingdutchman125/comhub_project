@@ -177,6 +177,11 @@ const getCommunityById = async (req, res) => {
             return res.status(404).json({ message: 'Komunitas tidak ditemukan' });
         }
 
+        // Catat kunjungan ke komunitas (asinkron agar tidak memblokir load page)
+        db.query('INSERT INTO community_visits (community_id) VALUES (?)', [communityId]).catch(err => {
+            console.error('Gagal mencatat kunjungan:', err.message);
+        });
+
         // 2. Ambil data anggota dengan join ke users
         const [members] = await db.query(`
             SELECT cm.id, u.id as user_id, u.nama, cm.community_role, cm.status_keanggotaan, cm.joined_at, cm.rating
@@ -512,6 +517,29 @@ const getCommunityReviews = async (req, res) => {
     }
 };
 
+const getPopularCommunities = async (req, res) => {
+    try {
+        // Ambil data komunitas dengan kunjungan tertinggi dalam 7 hari terakhir (minggu ini)
+        const [communities] = await db.query(`
+            SELECT c.id, c.nama_komunitas AS name, c.deskripsi AS description, c.logo, c.status,
+                   (SELECT COUNT(*) FROM community_members cm WHERE cm.community_id = c.id AND cm.status_keanggotaan = 'AKTIF') as memberCount,
+                   COALESCE((SELECT AVG(rating) FROM community_reviews cr WHERE cr.community_id = c.id), 0) as avgRating,
+                   COALESCE((SELECT COUNT(*) FROM community_reviews cr WHERE cr.community_id = c.id), 0) as reviewCount,
+                   COUNT(cv.id) as visitCount
+            FROM communities c
+            LEFT JOIN community_visits cv ON c.id = cv.community_id AND cv.visited_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+            WHERE c.approval_status = 'DISETUJUI' OR c.approval_status = 'TIDAK_ADA'
+            GROUP BY c.id
+            ORDER BY visitCount DESC, memberCount DESC, c.nama_komunitas ASC
+            LIMIT 5
+        `);
+        res.status(200).json(communities);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Terjadi kesalahan saat mengambil komunitas terpopuler minggu ini' });
+    }
+};
+
 module.exports = {
     createCommunity,
     getAllCommunities,
@@ -519,6 +547,7 @@ module.exports = {
     getCommunityById,
     generateReport,
     getTopCommunities,
+    getPopularCommunities,
     updateMemberRating,
     updateCommunity,
     addOrUpdateReview,

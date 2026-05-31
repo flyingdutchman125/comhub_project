@@ -8,6 +8,7 @@ const {
     getCommunityById,
     generateReport,
     getTopCommunities,
+    getPopularCommunities,
     updateMemberRating,
     updateCommunity,
     addOrUpdateReview,
@@ -38,6 +39,7 @@ const { verifyToken } = require('../middleware/authMiddleware');
 // PENTING: Route /my dan /top harus di atas /:id agar tidak tertangkap sebagai parameter
 router.get('/my', verifyToken, getUserCommunities);
 router.get('/top', getTopCommunities);
+router.get('/popular', getPopularCommunities);
 router.get('/pending/approvals', verifyToken, getPendingCommunities);
 
 router.get('/', getAllCommunities);

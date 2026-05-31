@@ -158,6 +158,136 @@ promisePool.getConnection()
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
             `);
             console.log('Inisialisasi tabel community_reviews selesai.');
+
+            console.log('Memeriksa dan membuat tabel community_visits...');
+            await promisePool.query(`
+                CREATE TABLE IF NOT EXISTS community_visits (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    community_id INT NOT NULL,
+                    visited_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (community_id) REFERENCES communities(id) ON DELETE CASCADE
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            `);
+            console.log('Inisialisasi tabel community_visits selesai.');
+
+            console.log('Memeriksa kolom rating pada tabel community_members...');
+            const [communityMembersTable] = await promisePool.query("SHOW TABLES LIKE 'community_members'");
+            if (communityMembersTable.length > 0) {
+                const [columnsRating] = await promisePool.query("SHOW COLUMNS FROM community_members LIKE 'rating'");
+                if (columnsRating.length === 0) {
+                    await promisePool.query('ALTER TABLE community_members ADD COLUMN rating INT DEFAULT NULL');
+                    console.log('Kolom rating berhasil ditambahkan ke tabel community_members.');
+                } else {
+                    console.log('Kolom rating sudah ada di tabel community_members.');
+                }
+            } else {
+                console.log('Tabel community_members belum ada; lewati penambahan kolom rating.');
+            }
+
+            console.log('Memeriksa dan membuat tabel notification_categories...');
+            await promisePool.query(`
+                CREATE TABLE IF NOT EXISTS notification_categories (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    name VARCHAR(100) NOT NULL UNIQUE,
+                    description TEXT,
+                    icon VARCHAR(50),
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            `);
+            console.log('Inisialisasi tabel notification_categories selesai.');
+
+            console.log('Memeriksa dan membuat tabel notification_types...');
+            await promisePool.query(`
+                CREATE TABLE IF NOT EXISTS notification_types (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    name VARCHAR(100) NOT NULL UNIQUE,
+                    category_id INT NOT NULL,
+                    description TEXT,
+                    icon VARCHAR(50),
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (category_id) REFERENCES notification_categories(id) ON DELETE CASCADE
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            `);
+            console.log('Inisialisasi tabel notification_types selesai.');
+
+            console.log('Memeriksa dan membuat tabel notifications...');
+            await promisePool.query(`
+                CREATE TABLE IF NOT EXISTS notifications (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    user_id INT NOT NULL,
+                    community_id INT NOT NULL,
+                    type_id INT NOT NULL,
+                    title VARCHAR(255) NOT NULL,
+                    message TEXT NOT NULL,
+                    data JSON DEFAULT NULL,
+                    is_read BOOLEAN DEFAULT FALSE,
+                    read_at TIMESTAMP NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                    FOREIGN KEY (community_id) REFERENCES communities(id) ON DELETE CASCADE,
+                    FOREIGN KEY (type_id) REFERENCES notification_types(id) ON DELETE CASCADE,
+                    INDEX idx_user_read (user_id, is_read),
+                    INDEX idx_created (created_at DESC)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            `);
+            console.log('Inisialisasi tabel notifications selesai.');
+
+            console.log('Memeriksa dan membuat tabel tasks...');
+            await promisePool.query(`
+                CREATE TABLE IF NOT EXISTS tasks (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    community_id INT NOT NULL,
+                    assigned_by INT NOT NULL,
+                    title VARCHAR(255) NOT NULL,
+                    description TEXT,
+                    priority ENUM('LOW', 'MEDIUM', 'HIGH') DEFAULT 'MEDIUM',
+                    status ENUM('PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED') DEFAULT 'PENDING',
+                    due_date DATE DEFAULT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    FOREIGN KEY (community_id) REFERENCES communities(id) ON DELETE CASCADE,
+                    FOREIGN KEY (assigned_by) REFERENCES users(id) ON DELETE CASCADE,
+                    INDEX idx_community (community_id),
+                    INDEX idx_status (status)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            `);
+            console.log('Inisialisasi tabel tasks selesai.');
+
+            console.log('Memeriksa dan membuat tabel task_assignments...');
+            await promisePool.query(`
+                CREATE TABLE IF NOT EXISTS task_assignments (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    task_id INT NOT NULL,
+                    user_id INT NOT NULL,
+                    assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    completed_at TIMESTAMP NULL,
+                    notes TEXT,
+                    UNIQUE KEY unique_task_user (task_id, user_id),
+                    FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            `);
+            console.log('Inisialisasi tabel task_assignments selesai.');
+
+            console.log('Memeriksa dan membuat tabel community_changes...');
+            await promisePool.query(`
+                CREATE TABLE IF NOT EXISTS community_changes (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    community_id INT NOT NULL,
+                    changed_by INT NOT NULL,
+                    change_type VARCHAR(100) NOT NULL,
+                    description TEXT NOT NULL,
+                    old_value JSON DEFAULT NULL,
+                    new_value JSON DEFAULT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (community_id) REFERENCES communities(id) ON DELETE CASCADE,
+                    FOREIGN KEY (changed_by) REFERENCES users(id) ON DELETE CASCADE,
+                    INDEX idx_community (community_id),
+                    INDEX idx_created (created_at DESC)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            `);
+            console.log('Inisialisasi tabel community_changes selesai.');
+
         } catch (initErr) {
             console.error('Error saat inisialisasi database:', initErr.message);
         }

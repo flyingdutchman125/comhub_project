@@ -22,6 +22,13 @@ export function AuthProvider({ children }) {
           const res = await fetch('http://localhost:3000/api/communities/my', {
             headers: { 'Authorization': `Bearer ${storedToken}` }
           })
+          if (res.status === 401 || res.status === 403) {
+            // Token expired or invalid - clear session
+            localStorage.removeItem('token')
+            localStorage.removeItem('user')
+            setIsLoading(false)
+            return
+          }
           if (res.ok) {
             const communities = await res.json()
             const memberships = communities.map(c => ({
