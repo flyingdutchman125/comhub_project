@@ -32,10 +32,7 @@ export function SettingsPage({ user, token, selectedCommunity, userRoleInSelecte
   const [commCropSrc, setCommCropSrc] = useState(null)
   const commCropCallbackRef = useRef(null)
 
-  // Tab 4: Preferensi & Tema
-  const [theme, setTheme] = useState(localStorage.getItem('comhub_theme') || 'cyan')
-
-  // Tab 5: Registrasi Admin (Khusus Kemahasiswaan)
+  // Tab 4: Registrasi Admin (Khusus Kemahasiswaan)
   const [adminForm, setAdminForm] = useState({ nama: '', email: '', password: '', role: 'DOSEN' })
 
   useEffect(() => {
@@ -126,12 +123,6 @@ export function SettingsPage({ user, token, selectedCommunity, userRoleInSelecte
     }
   }
 
-  const changeTheme = (newTheme) => {
-    setTheme(newTheme)
-    localStorage.setItem('comhub_theme', newTheme)
-    Swal.fire({ icon: 'success', title: 'Tema Diperbarui', text: `Tema ${newTheme} aktif!`, background: '#0f172a', color: '#fff', timer: 1000, showConfirmButton: false })
-  }
-
   const handleRegisterAdmin = async (e) => {
     e.preventDefault()
     try {
@@ -149,9 +140,9 @@ export function SettingsPage({ user, token, selectedCommunity, userRoleInSelecte
     }
   }
 
-  const tabs = ['Profil Saya', 'Keamanan Akun', 'Preferensi & Tema']
+  const tabs = ['Profil Saya', 'Keamanan Akun']
   if (selectedCommunity && ['KETUA', 'SEKRETARIS'].includes(userRoleInSelected)) {
-    tabs.splice(2, 0, 'Pengaturan Komunitas')
+    tabs.push('Pengaturan Komunitas')
   }
   if (user?.role === 'KEMAHASISWAAN') {
     tabs.push('Registrasi Admin')
@@ -304,37 +295,6 @@ export function SettingsPage({ user, token, selectedCommunity, userRoleInSelecte
                 Simpan Pengaturan Komunitas
               </button>
             </form>
-          </div>
-        )}
-
-        {activeTab === 'Preferensi & Tema' && (
-          <div className="animate-fadeIn">
-            <h2 className="text-2xl font-bold text-white mb-6">Preferensi & Tema</h2>
-            <div className="max-w-2xl space-y-8">
-              
-              <div>
-                <h4 className="text-sm font-medium text-white mb-3">Warna Aksen Aplikasi</h4>
-                <div className="flex gap-4">
-                  {[
-                    { id: 'cyan', color: 'bg-cyan-500', label: 'Cyan Aurora' },
-                    { id: 'emerald', color: 'bg-emerald-500', label: 'Emerald Forest' },
-                    { id: 'violet', color: 'bg-violet-500', label: 'Cosmic Violet' },
-                  ].map(t => (
-                    <button 
-                      key={t.id}
-                      onClick={() => changeTheme(t.id)}
-                      className={`flex flex-col items-center gap-2 p-3 rounded-2xl border transition ${
-                        theme === t.id ? 'border-white bg-slate-800 shadow-md shadow-white/10' : 'border-slate-800 bg-slate-950 hover:border-slate-600'
-                      }`}
-                    >
-                      <div className={`w-10 h-10 rounded-full ${t.color}`}></div>
-                      <span className="text-xs text-slate-300 font-medium">{t.label}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-            </div>
           </div>
         )}
 
