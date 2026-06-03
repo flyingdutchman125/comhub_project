@@ -130,4 +130,40 @@ const changePassword = async (req, res) => {
     }
 };
 
-module.exports = { register, login, logout, changePassword };
+// --- FITUR REGISTER ADMIN (KEMAHASISWAAN) ---
+const registerAdmin = async (req, res) => {
+    try {
+        if (req.user.role !== 'KEMAHASISWAAN') {
+            return res.status(403).json({ message: 'Akses ditolak.' });
+        }
+        
+        const { nama, email, password, role } = req.body;
+        if (!['DOSEN', 'KEMAHASISWAAN'].includes(role)) {
+            return res.status(400).json({ message: 'Role tidak valid.' });
+        }
+
+        // Cek email
+        const [existingUser] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
+        if (existingUser.length > 0) {
+            return res.status(400).json({ message: 'Email sudah terdaftar!' });
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        const [result] = await db.query(
+            'INSERT INTO users (nama, email, password, global_role) VALUES (?, ?, ?, ?)',
+            [nama, email, hashedPassword, role]
+        );
+
+        res.status(201).json({
+            message: `Registrasi akun ${role} berhasil!`,
+            userId: result.insertId
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Terjadi kesalahan pada server' });
+    }
+};
+
+module.exports = { register, login, logout, changePassword, registerAdmin };

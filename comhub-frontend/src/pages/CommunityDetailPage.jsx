@@ -413,8 +413,20 @@ export function CommunityDetailPage({ community, onBack }) {
                   ) : financial.transactions.map((tx) => (
                     <div key={tx.id} className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-950/70 p-3">
                       <div>
-                        <p className="text-sm font-medium text-white">{tx.description}</p>
-                        <p className="text-xs text-slate-400">{tx.transaction_date ? new Date(tx.transaction_date).toLocaleDateString('id-ID') : ''}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium text-white">{tx.description}</p>
+                          {tx.approval_status === 'PENDING' && (
+                            <span className="text-[9px] bg-yellow-500/20 text-yellow-300 px-2 py-0.5 rounded-full uppercase font-bold border border-yellow-500/30">
+                              Menunggu ACC Dosen
+                            </span>
+                          )}
+                          {tx.approval_status === 'REJECTED' && (
+                            <span className="text-[9px] bg-red-500/20 text-red-300 px-2 py-0.5 rounded-full uppercase font-bold border border-red-500/30">
+                              Ditolak
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-slate-400 mt-1">{tx.transaction_date ? new Date(tx.transaction_date).toLocaleDateString('id-ID') : ''}</p>
                       </div>
                       <p className={`text-sm font-semibold ${tx.type === 'INCOME' ? 'text-emerald-400' : 'text-red-400'}`}>
                         {tx.type === 'INCOME' ? '+' : '-'} Rp {parseFloat(tx.amount).toLocaleString('id-ID')}

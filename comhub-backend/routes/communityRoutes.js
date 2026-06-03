@@ -31,7 +31,14 @@ const {
     approveByKemahasiswaan,
     rejectCommunity,
     applyForUKMUpgrade,
-    approveUpgradeDosen
+    approveUpgradeDosen,
+    approveUpgradeKemahasiswaan,
+    rejectUpgradeKemahasiswaan,
+    getPendingUKMActivities,
+    approveProject,
+    rejectProject,
+    approveFinance,
+    rejectFinance
 } = require('../controllers/communityApprovalController');
 
 const { verifyToken } = require('../middleware/authMiddleware');
@@ -41,6 +48,7 @@ router.get('/my', verifyToken, getUserCommunities);
 router.get('/top', getTopCommunities);
 router.get('/popular', getPopularCommunities);
 router.get('/pending/approvals', verifyToken, getPendingCommunities);
+router.get('/pending/ukm-activities', verifyToken, getPendingUKMActivities);
 
 router.get('/', getAllCommunities);
 router.post('/', verifyToken, createCommunity);
@@ -57,6 +65,14 @@ router.put('/:id/reject', verifyToken, rejectCommunity);
 // Upgrade Routes
 router.post('/:id/upgrade', verifyToken, applyForUKMUpgrade);
 router.put('/:id/upgrade/approve', verifyToken, approveUpgradeDosen);
+router.put('/:id/upgrade/approve/kemahasiswaan', verifyToken, approveUpgradeKemahasiswaan);
+router.put('/:id/upgrade/reject/kemahasiswaan', verifyToken, rejectUpgradeKemahasiswaan);
+
+// UKM Activity Approval Routes (DOSEN)
+router.put('/projects/:id/approve', verifyToken, approveProject);
+router.put('/projects/:id/reject', verifyToken, rejectProject);
+router.put('/finances/:id/approve', verifyToken, approveFinance);
+router.put('/finances/:id/reject', verifyToken, rejectFinance);
 
 // TAMBAHAN BARU:
 // Endpoint untuk melihat daftar anggota aktif di komunitas

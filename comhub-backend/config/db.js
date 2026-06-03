@@ -253,6 +253,29 @@ promisePool.getConnection()
             `);
             console.log('Inisialisasi tabel tasks selesai.');
 
+            console.log('Memeriksa kolom approval_status di tabel projects...');
+            const [projCols] = await promisePool.query("SHOW COLUMNS FROM projects LIKE 'approval_status'");
+            if (projCols.length === 0) {
+                await promisePool.query("ALTER TABLE projects ADD COLUMN approval_status ENUM('APPROVED', 'PENDING', 'REJECTED') DEFAULT 'APPROVED'");
+                console.log('Kolom approval_status berhasil ditambahkan ke tabel projects.');
+            } else {
+                // Ensure enum contains new values
+                await promisePool.query("ALTER TABLE projects MODIFY COLUMN approval_status ENUM('APPROVED', 'PENDING', 'REJECTED', 'MENUNGGU_DOSEN', 'DISETUJUI', 'DITOLAK') DEFAULT 'APPROVED'");
+            }
+
+            console.log('Memeriksa kolom approval_status di tabel finances...');
+            const [finCols] = await promisePool.query("SHOW COLUMNS FROM finances LIKE 'approval_status'");
+            if (finCols.length === 0) {
+                await promisePool.query("ALTER TABLE finances ADD COLUMN approval_status ENUM('APPROVED', 'PENDING', 'REJECTED') DEFAULT 'APPROVED'");
+                console.log('Kolom approval_status berhasil ditambahkan ke tabel finances.');
+            } else {
+                // Ensure enum contains new values
+                await promisePool.query("ALTER TABLE finances MODIFY COLUMN approval_status ENUM('APPROVED', 'PENDING', 'REJECTED', 'MENUNGGU_DOSEN', 'DISETUJUI', 'DITOLAK') DEFAULT 'APPROVED'");
+            }
+            
+            console.log('Memeriksa kolom upgrade_status di tabel communities...');
+            await promisePool.query("ALTER TABLE communities MODIFY COLUMN upgrade_status ENUM('TIDAK_ADA', 'MENUNGGU_DOSEN', 'MENUNGGU_KEMAHASISWAAN', 'DITOLAK', 'DISETUJUI') DEFAULT 'TIDAK_ADA'");
+
             console.log('Memeriksa dan membuat tabel task_assignments...');
             await promisePool.query(`
                 CREATE TABLE IF NOT EXISTS task_assignments (

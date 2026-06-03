@@ -22,14 +22,19 @@ const createFinance = async (req, res) => {
             return res.status(400).json({ message: 'Tipe transaksi harus INCOME atau EXPENSE!' });
         }
 
-        // 3. Simpan transaksi
+        // 3. Cek status komunitas apakah UKM atau KOMUNITAS biasa
+        const [commInfo] = await db.query('SELECT status FROM communities WHERE id = ?', [communityId]);
+        const isUKM = commInfo.length > 0 && commInfo[0].status === 'UKM';
+        const initialStatus = isUKM ? 'PENDING' : 'APPROVED';
+
+        // 4. Simpan transaksi
         const [result] = await db.query(
-            'INSERT INTO finances (community_id, type, amount, description, transaction_date) VALUES (?, ?, ?, ?, ?)',
-            [communityId, type, amount, description, transaction_date || new Date()]
+            'INSERT INTO finances (community_id, type, amount, description, transaction_date, approval_status) VALUES (?, ?, ?, ?, ?, ?)',
+            [communityId, type, amount, description, transaction_date || new Date(), initialStatus]
         );
 
         res.status(201).json({
-            message: 'Transaksi berhasil ditambahkan!',
+            message: initialStatus === 'PENDING' ? 'Pengajuan dana dikirim dan menunggu persetujuan Dosen!' : 'Transaksi berhasil ditambahkan!',
             financeId: result.insertId
         });
 

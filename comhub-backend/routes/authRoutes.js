@@ -1,10 +1,13 @@
 const express = require('express');
 const router = express.Router();
-const { register, login, logout, changePassword } = require('../controllers/authController');
+const { register, login, logout, changePassword, registerAdmin } = require('../controllers/authController');
 const { verifyToken } = require('../middleware/authMiddleware');
 
 // Endpoint: POST /api/auth/register
 router.post('/register', register);
+
+// Endpoint: POST /api/auth/register-admin
+router.post('/register-admin', verifyToken, registerAdmin);
 
 // Endpoint: POST /api/auth/login
 router.post('/login', login);

@@ -17,11 +17,19 @@ const createProject = async (req, res) => {
             return res.status(403).json({ message: 'Akses ditolak! Hanya pengurus yang bisa membuat proyek.' });
         }
 
+        // Cek status komunitas apakah UKM atau KOMUNITAS biasa
+        const [commInfo] = await db.query('SELECT status FROM communities WHERE id = ?', [communityId]);
+        const isUKM = commInfo.length > 0 && commInfo[0].status === 'UKM';
+        const initialStatus = isUKM ? 'PENDING' : 'APPROVED';
+
         const [result] = await db.query(
-            'INSERT INTO projects (community_id, nama_proker, deskripsi, anggaran, start_date, end_date) VALUES (?, ?, ?, ?, ?, ?)',
-            [communityId, nama_proyek, deskripsi, anggaran || '0', start_date, end_date]
+            'INSERT INTO projects (community_id, nama_proker, deskripsi, anggaran, start_date, end_date, approval_status) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            [communityId, nama_proyek, deskripsi, anggaran || '0', start_date, end_date, initialStatus]
         );
-        res.status(201).json({ message: 'Proyek berhasil dibuat!', projectId: result.insertId });
+        res.status(201).json({ 
+            message: initialStatus === 'PENDING' ? 'Proyek diajukan dan menunggu persetujuan Dosen!' : 'Proyek berhasil dibuat!', 
+            projectId: result.insertId 
+        });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Terjadi kesalahan saat membuat proyek.' });
@@ -34,7 +42,7 @@ const getProjectsByCommunity = async (req, res) => {
 
     try {
         const [projects] = await db.query(`
-            SELECT p.id, p.nama_proker as name, p.deskripsi, p.anggaran, p.progress, p.start_date, p.end_date, p.created_at,
+            SELECT p.id, p.nama_proker as name, p.deskripsi, p.anggaran, p.progress, p.start_date, p.end_date, p.created_at, p.approval_status,
                 (SELECT COUNT(*) FROM tasks t WHERE t.project_id = p.id) as totalTasks,
                 (SELECT COUNT(*) FROM tasks t WHERE t.project_id = p.id AND t.status = 'DONE') as doneTasks
             FROM projects p
@@ -51,6 +59,7 @@ const getProjectsByCommunity = async (req, res) => {
             start_date: p.start_date,
             end_date: p.end_date,
             created_at: p.created_at,
+            approval_status: p.approval_status,
             totalTasks: p.totalTasks,
             doneTasks: p.doneTasks,
             progress: p.progress || 0, // Menggunakan kolom progress manual

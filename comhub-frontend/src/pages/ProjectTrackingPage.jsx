@@ -477,9 +477,25 @@ export function ProjectTrackingPage({ communityId, token, isReadOnly = false, cu
               ) : projects.map((p) => (
                 <tr key={p.id} className="border-t border-slate-800 text-slate-200">
                   <td className="py-4 pr-6 font-medium text-white">
-                    <button onClick={() => handleSelectProject(p)} className="text-left hover:text-cyan-300 transition">
-                      {p.name} {selectedProject?.id === p.id ? '▲' : '▼'}
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button 
+                        onClick={() => handleSelectProject(p)} 
+                        className={`text-left transition ${p.approval_status === 'PENDING' ? 'opacity-50 cursor-not-allowed' : 'hover:text-cyan-300'}`}
+                        disabled={p.approval_status === 'PENDING'}
+                      >
+                        {p.name} {selectedProject?.id === p.id ? '▲' : '▼'}
+                      </button>
+                      {p.approval_status === 'PENDING' && (
+                        <span className="text-[10px] bg-yellow-500/20 text-yellow-300 px-2 py-0.5 rounded-full uppercase font-bold border border-yellow-500/30">
+                          Menunggu ACC Dosen
+                        </span>
+                      )}
+                      {p.approval_status === 'REJECTED' && (
+                        <span className="text-[10px] bg-red-500/20 text-red-300 px-2 py-0.5 rounded-full uppercase font-bold border border-red-500/30" title="Ditolak oleh Dosen">
+                          Ditolak
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="py-4 pr-6 text-slate-400">{p.end_date ? new Date(p.end_date).toLocaleDateString('id-ID') : '-'}</td>
                   <td className="py-4 pr-6"><span className={`inline-flex rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] ${getStatusStyle(p.status)}`}>{p.status}</span></td>

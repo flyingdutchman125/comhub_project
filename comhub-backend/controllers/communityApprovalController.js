@@ -24,8 +24,8 @@ const getPendingCommunities = async (req, res) => {
         if (role === 'DOSEN') {
             queryStr += ` WHERE c.approval_status = 'MENUNGGU_DOSEN' OR c.upgrade_status = 'MENUNGGU_DOSEN' ORDER BY c.created_at ASC`;
         } else {
-            queryStr += ` WHERE c.approval_status = ? ORDER BY c.created_at ASC`;
-            queryParams.push(targetStatus);
+            queryStr += ` WHERE c.approval_status = ? OR c.upgrade_status = ? ORDER BY c.created_at ASC`;
+            queryParams.push(targetStatus, targetStatus);
         }
 
         const [communities] = await db.query(queryStr, queryParams);
@@ -237,7 +237,7 @@ const applyForUKMUpgrade = async (req, res) => {
     }
 };
 
-// Dosen menyetujui Upgrade UKM
+// Dosen menyetujui Upgrade UKM (Ke Kemahasiswaan)
 const approveUpgradeDosen = async (req, res) => {
     const communityId = req.params.id;
     const role = req.user.role;
@@ -247,7 +247,7 @@ const approveUpgradeDosen = async (req, res) => {
 
     try {
         const [result] = await db.query(
-            'UPDATE communities SET status = "UKM", upgrade_status = "TIDAK_ADA", dosen_pembina_id = ? WHERE id = ? AND upgrade_status = "MENUNGGU_DOSEN"',
+            'UPDATE communities SET upgrade_status = "MENUNGGU_KEMAHASISWAAN", dosen_pembina_id = ? WHERE id = ? AND upgrade_status = "MENUNGGU_DOSEN"',
             [dosenId, communityId]
         );
 
@@ -255,10 +255,184 @@ const approveUpgradeDosen = async (req, res) => {
             return res.status(404).json({ message: 'Pengajuan UKM tidak ditemukan.' });
         }
 
+        res.status(200).json({ message: 'Pengajuan UKM disetujui Dosen, diteruskan ke Kemahasiswaan!' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Terjadi kesalahan saat menyetujui upgrade UKM' });
+    }
+};
+
+// Kemahasiswaan menyetujui Upgrade UKM dan menerbitkan SK
+const approveUpgradeKemahasiswaan = async (req, res) => {
+    const communityId = req.params.id;
+    const role = req.user.role;
+    const { sk_number } = req.body;
+
+    if (role !== 'KEMAHASISWAAN') return res.status(403).json({ message: 'Akses ditolak.' });
+    if (!sk_number) return res.status(400).json({ message: 'Nomor SK wajib diisi.' });
+
+    try {
+        const [result] = await db.query(
+            'UPDATE communities SET status = "UKM", upgrade_status = "TIDAK_ADA", sk_number = ? WHERE id = ? AND upgrade_status = "MENUNGGU_KEMAHASISWAAN"',
+            [sk_number, communityId]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: 'Pengajuan UKM tidak ditemukan atau status tidak valid.' });
+        }
+
         res.status(200).json({ message: 'Komunitas resmi di-upgrade menjadi UKM!' });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Terjadi kesalahan saat menyetujui upgrade UKM' });
+    }
+};
+
+// Kemahasiswaan menolak Upgrade UKM
+const rejectUpgradeKemahasiswaan = async (req, res) => {
+    const communityId = req.params.id;
+    const role = req.user.role;
+
+    if (role !== 'KEMAHASISWAAN') return res.status(403).json({ message: 'Akses ditolak.' });
+
+    try {
+        const [result] = await db.query(
+            'UPDATE communities SET upgrade_status = "DITOLAK" WHERE id = ? AND upgrade_status = "MENUNGGU_KEMAHASISWAAN"',
+            [communityId]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: 'Pengajuan UKM tidak ditemukan atau status tidak valid.' });
+        }
+
+        res.status(200).json({ message: 'Pengajuan UKM ditolak.' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Terjadi kesalahan saat menolak upgrade UKM' });
+    }
+};
+
+// --- API BARU UNTUK PERSETUJUAN AKTIVITAS UKM OLEH DOSEN ---
+
+const getPendingUKMActivities = async (req, res) => {
+    const role = req.user.role;
+    const dosenId = req.user.id;
+
+    if (role !== 'DOSEN') {
+        return res.status(403).json({ message: 'Akses ditolak.' });
+    }
+
+    try {
+        // Ambil proyek berstatus PENDING di UKM yang dibina oleh Dosen ini
+        const [projects] = await db.query(`
+            SELECT p.id, p.nama_proker, p.deskripsi, p.anggaran, p.start_date, p.end_date, p.created_at, p.approval_status, c.nama_komunitas
+            FROM projects p
+            JOIN communities c ON p.community_id = c.id
+            WHERE c.dosen_pembina_id = ? AND c.status = 'UKM' AND p.approval_status = 'PENDING'
+            ORDER BY p.created_at DESC
+        `, [dosenId]);
+
+        // Ambil transaksi keuangan berstatus PENDING di UKM yang dibina oleh Dosen ini
+        const [finances] = await db.query(`
+            SELECT f.id, f.type, f.amount, f.description, f.transaction_date, f.approval_status, c.nama_komunitas
+            FROM finances f
+            JOIN communities c ON f.community_id = c.id
+            WHERE c.dosen_pembina_id = ? AND c.status = 'UKM' AND f.approval_status = 'PENDING'
+            ORDER BY f.transaction_date DESC
+        `, [dosenId]);
+
+        res.status(200).json({
+            projects,
+            finances
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Terjadi kesalahan saat mengambil aktivitas pending UKM' });
+    }
+};
+
+const approveProject = async (req, res) => {
+    const projectId = req.params.id;
+    const role = req.user.role;
+    const dosenId = req.user.id;
+
+    if (role !== 'DOSEN') return res.status(403).json({ message: 'Akses ditolak.' });
+
+    try {
+        // Validasi kepemilikan binaan
+        const [proj] = await db.query('SELECT c.dosen_pembina_id FROM projects p JOIN communities c ON p.community_id = c.id WHERE p.id = ?', [projectId]);
+        if (proj.length === 0 || proj[0].dosen_pembina_id !== dosenId) {
+            return res.status(403).json({ message: 'Akses ditolak! Anda bukan pembina UKM ini.' });
+        }
+
+        await db.query('UPDATE projects SET approval_status = "APPROVED" WHERE id = ? AND approval_status = "PENDING"', [projectId]);
+        res.status(200).json({ message: 'Proyek UKM disetujui!' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Terjadi kesalahan' });
+    }
+};
+
+const rejectProject = async (req, res) => {
+    const projectId = req.params.id;
+    const role = req.user.role;
+    const dosenId = req.user.id;
+
+    if (role !== 'DOSEN') return res.status(403).json({ message: 'Akses ditolak.' });
+
+    try {
+        const [proj] = await db.query('SELECT c.dosen_pembina_id FROM projects p JOIN communities c ON p.community_id = c.id WHERE p.id = ?', [projectId]);
+        if (proj.length === 0 || proj[0].dosen_pembina_id !== dosenId) {
+            return res.status(403).json({ message: 'Akses ditolak! Anda bukan pembina UKM ini.' });
+        }
+
+        await db.query('UPDATE projects SET approval_status = "REJECTED" WHERE id = ? AND approval_status = "PENDING"', [projectId]);
+        res.status(200).json({ message: 'Proyek UKM ditolak.' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Terjadi kesalahan' });
+    }
+};
+
+const approveFinance = async (req, res) => {
+    const financeId = req.params.id;
+    const role = req.user.role;
+    const dosenId = req.user.id;
+
+    if (role !== 'DOSEN') return res.status(403).json({ message: 'Akses ditolak.' });
+
+    try {
+        const [fin] = await db.query('SELECT c.dosen_pembina_id FROM finances f JOIN communities c ON f.community_id = c.id WHERE f.id = ?', [financeId]);
+        if (fin.length === 0 || fin[0].dosen_pembina_id !== dosenId) {
+            return res.status(403).json({ message: 'Akses ditolak! Anda bukan pembina UKM ini.' });
+        }
+
+        await db.query('UPDATE finances SET approval_status = "APPROVED" WHERE id = ? AND approval_status = "PENDING"', [financeId]);
+        res.status(200).json({ message: 'Pengajuan Dana disetujui!' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Terjadi kesalahan' });
+    }
+};
+
+const rejectFinance = async (req, res) => {
+    const financeId = req.params.id;
+    const role = req.user.role;
+    const dosenId = req.user.id;
+
+    if (role !== 'DOSEN') return res.status(403).json({ message: 'Akses ditolak.' });
+
+    try {
+        const [fin] = await db.query('SELECT c.dosen_pembina_id FROM finances f JOIN communities c ON f.community_id = c.id WHERE f.id = ?', [financeId]);
+        if (fin.length === 0 || fin[0].dosen_pembina_id !== dosenId) {
+            return res.status(403).json({ message: 'Akses ditolak! Anda bukan pembina UKM ini.' });
+        }
+
+        await db.query('UPDATE finances SET approval_status = "REJECTED" WHERE id = ? AND approval_status = "PENDING"', [financeId]);
+        res.status(200).json({ message: 'Pengajuan Dana ditolak.' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Terjadi kesalahan' });
     }
 };
 
@@ -269,5 +443,12 @@ module.exports = {
     approveByKemahasiswaan,
     rejectCommunity,
     applyForUKMUpgrade,
-    approveUpgradeDosen
+    approveUpgradeDosen,
+    approveUpgradeKemahasiswaan,
+    rejectUpgradeKemahasiswaan,
+    getPendingUKMActivities,
+    approveProject,
+    rejectProject,
+    approveFinance,
+    rejectFinance
 };

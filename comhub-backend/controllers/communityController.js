@@ -191,7 +191,7 @@ const getCommunityById = async (req, res) => {
 
         // 3. Ambil data proyek
         const [projects] = await db.query(`
-            SELECT id, nama_proker as name, deskripsi, anggaran, progress, start_date, end_date, created_at
+            SELECT id, nama_proker as name, deskripsi, anggaran, progress, start_date, end_date, created_at, approval_status
             FROM projects
             WHERE community_id = ?
             ORDER BY created_at DESC
@@ -199,7 +199,7 @@ const getCommunityById = async (req, res) => {
 
         // 4. Ambil data finansial
         const [finances] = await db.query(`
-            SELECT id, type, amount, description, transaction_date
+            SELECT id, type, amount, description, transaction_date, approval_status
             FROM finances
             WHERE community_id = ?
             ORDER BY transaction_date DESC
