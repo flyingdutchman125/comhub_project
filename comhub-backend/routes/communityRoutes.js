@@ -21,7 +21,8 @@ const {
     approveApplicant,
     assignRole,
     removeMember,
-    getCommunityMembers
+    getCommunityMembers,
+    resignFromKetua
 } = require('../controllers/communityMemberController');
 
 const {
@@ -75,6 +76,9 @@ router.put('/finances/:id/approve', verifyToken, approveFinance);
 router.put('/finances/:id/reject', verifyToken, rejectFinance);
 
 // TAMBAHAN BARU:
+// Endpoint untuk mengundurkan diri (Hanya KETUA)
+router.put('/:id/members/resign', verifyToken, resignFromKetua);
+
 // Endpoint untuk melihat daftar anggota aktif di komunitas
 router.get('/:id/members', verifyToken, getCommunityMembers);
 

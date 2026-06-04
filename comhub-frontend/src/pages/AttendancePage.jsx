@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react'
 import Swal from 'sweetalert2'
-
+import { AttendanceStats } from '../components/AttendanceStats'
+import { CreateSessionModal } from '../components/Attendance/CreateSessionModal'
+import { EditSessionModal } from '../components/Attendance/EditSessionModal'
+import { ManageAttendanceModal } from '../components/Attendance/ManageAttendanceModal'
 export function AttendancePage({ communityId, token, isReadOnly = false, currentUserRole = null }) {
     const [sessions, setSessions] = useState([])
     const [summary, setSummary] = useState([])
@@ -382,47 +385,7 @@ export function AttendancePage({ communityId, token, isReadOnly = false, current
 
     return (
         <section className="mt-8 space-y-6">
-            {/* Top Cards Statistics */}
-            <div className="grid gap-6 sm:grid-cols-3">
-                <div className="rounded-[2rem] border border-slate-800 bg-slate-900/90 p-6 flex flex-col justify-between shadow-xl shadow-cyan-500/5 hover:border-slate-700 transition duration-300">
-                    <div>
-                        <span className="rounded-full bg-cyan-500/10 text-cyan-400 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider">
-                            Rata-Rata Kehadiran
-                        </span>
-                        <h4 className="text-slate-400 text-xs mt-3">Persentase kehadiran seluruh anggota</h4>
-                    </div>
-                    <div className="flex items-baseline mt-6">
-                        <span className="text-4xl font-bold text-white">{stats.avgRate}%</span>
-                        <span className="text-xs text-slate-500 ml-2">dari semua sesi</span>
-                    </div>
-                </div>
-
-                <div className="rounded-[2rem] border border-slate-800 bg-slate-900/90 p-6 flex flex-col justify-between shadow-xl shadow-cyan-500/5 hover:border-slate-700 transition duration-300">
-                    <div>
-                        <span className="rounded-full bg-purple-500/10 text-purple-400 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider">
-                            Total Sesi Absensi
-                        </span>
-                        <h4 className="text-slate-400 text-xs mt-3">Sesi absensi kegiatan yang telah dibuat</h4>
-                    </div>
-                    <div className="flex items-baseline mt-6">
-                        <span className="text-4xl font-bold text-white">{stats.totalSess}</span>
-                        <span className="text-xs text-slate-500 ml-2">Sesi Kegiatan</span>
-                    </div>
-                </div>
-
-                <div className="rounded-[2rem] border border-slate-800 bg-slate-900/90 p-6 flex flex-col justify-between shadow-xl shadow-cyan-500/5 hover:border-slate-700 transition duration-300">
-                    <div>
-                        <span className="rounded-full bg-emerald-500/10 text-emerald-400 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider">
-                            Kehadiran Sempurna
-                        </span>
-                        <h4 className="text-slate-400 text-xs mt-3">Anggota dengan kehadiran 100%</h4>
-                    </div>
-                    <div className="flex items-baseline mt-6">
-                        <span className="text-4xl font-bold text-white">{stats.perfectCount}</span>
-                        <span className="text-xs text-slate-500 ml-2">Anggota</span>
-                    </div>
-                </div>
-            </div>
+            <AttendanceStats stats={stats} />
 
             {/* Content Section */}
             <div className="rounded-[2rem] border border-slate-800 bg-slate-900/90 p-6 shadow-2xl">
@@ -651,244 +614,38 @@ export function AttendancePage({ communityId, token, isReadOnly = false, current
                 )}
             </div>
 
-            {/* Modal: Create Session */}
-            {showCreateModal && (
-                <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50 animate-fadeIn">
-                    <div className="bg-slate-900 rounded-[2rem] border border-slate-800 p-6 max-w-md w-full shadow-2xl">
-                        <h3 className="text-2xl font-semibold text-white">Buat Sesi Absensi</h3>
-                        <p className="mt-2 text-slate-400 text-sm">Gunakan form ini untuk membuat lembar absensi kegiatan/rapat baru.</p>
-                        
-                        <form onSubmit={handleCreateSession} className="mt-6 space-y-4">
-                            <div>
-                                <label className="block text-sm text-slate-300 mb-2">Nama/Judul Kegiatan</label>
-                                <input 
-                                    type="text" 
-                                    required 
-                                    value={formData.title}
-                                    onChange={(e) => setFormData(p => ({ ...p, title: e.target.value }))}
-                                    className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2.5 text-white outline-none focus:border-cyan-400"
-                                    placeholder="Contoh: Rapat Koordinasi, LDKS" 
-                                />
-                            </div>
+            <CreateSessionModal
+                showCreateModal={showCreateModal}
+                setShowCreateModal={setShowCreateModal}
+                formData={formData}
+                setFormData={setFormData}
+                handleCreateSession={handleCreateSession}
+            />
 
-                            <div>
-                                <label className="block text-sm text-slate-300 mb-2">Tanggal Kegiatan</label>
-                                <input 
-                                    type="date" 
-                                    required 
-                                    value={formData.session_date}
-                                    onChange={(e) => setFormData(p => ({ ...p, session_date: e.target.value }))}
-                                    className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2.5 text-white outline-none focus:border-cyan-400 text-sm" 
-                                />
-                            </div>
+            <EditSessionModal
+                showEditModal={showEditModal}
+                setShowEditModal={setShowEditModal}
+                formData={formData}
+                setFormData={setFormData}
+                handleEditSession={handleEditSession}
+                setEditingSession={setEditingSession}
+            />
 
-                            <div>
-                                <label className="block text-sm text-slate-300 mb-2">Keterangan / Agenda (Opsional)</label>
-                                <textarea 
-                                    rows="3"
-                                    value={formData.description}
-                                    onChange={(e) => setFormData(p => ({ ...p, description: e.target.value }))}
-                                    className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2.5 text-white outline-none focus:border-cyan-400 text-sm resize-none" 
-                                    placeholder="Jelaskan secara singkat mengenai isi rapat..."
-                                />
-                            </div>
-
-                            <div className="flex gap-3 pt-2">
-                                <button 
-                                    type="submit" 
-                                    className="flex-1 rounded-lg bg-cyan-500 px-4 py-2.5 font-semibold text-slate-950 hover:bg-cyan-400 transition"
-                                >
-                                    Buat Sesi
-                                </button>
-                                <button 
-                                    type="button" 
-                                    onClick={() => setShowCreateModal(false)}
-                                    className="flex-1 rounded-lg border border-slate-700 px-4 py-2.5 font-semibold text-slate-300 hover:bg-slate-800 transition"
-                                >
-                                    Batal
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-
-            {/* Modal: Edit Session */}
-            {showEditModal && (
-                <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50 animate-fadeIn">
-                    <div className="bg-slate-900 rounded-[2rem] border border-slate-800 p-6 max-w-md w-full shadow-2xl">
-                        <h3 className="text-2xl font-semibold text-white">Ubah Sesi Absensi</h3>
-                        <p className="mt-2 text-slate-400 text-sm">Ganti metadata detail mengenai rapat atau kegiatan ini.</p>
-                        
-                        <form onSubmit={handleEditSession} className="mt-6 space-y-4">
-                            <div>
-                                <label className="block text-sm text-slate-300 mb-2">Nama/Judul Kegiatan</label>
-                                <input 
-                                    type="text" 
-                                    required 
-                                    value={formData.title}
-                                    onChange={(e) => setFormData(p => ({ ...p, title: e.target.value }))}
-                                    className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2.5 text-white outline-none focus:border-cyan-400" 
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm text-slate-300 mb-2">Tanggal Kegiatan</label>
-                                <input 
-                                    type="date" 
-                                    required 
-                                    value={formData.session_date}
-                                    onChange={(e) => setFormData(p => ({ ...p, session_date: e.target.value }))}
-                                    className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2.5 text-white outline-none focus:border-cyan-400 text-sm" 
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm text-slate-300 mb-2">Keterangan / Agenda (Opsional)</label>
-                                <textarea 
-                                    rows="3"
-                                    value={formData.description}
-                                    onChange={(e) => setFormData(p => ({ ...p, description: e.target.value }))}
-                                    className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2.5 text-white outline-none focus:border-cyan-400 text-sm resize-none" 
-                                />
-                            </div>
-
-                            <div className="flex gap-3 pt-2">
-                                <button 
-                                    type="submit" 
-                                    className="flex-1 rounded-lg bg-cyan-500 px-4 py-2.5 font-semibold text-slate-950 hover:bg-cyan-400 transition"
-                                >
-                                    Simpan Perubahan
-                                </button>
-                                <button 
-                                    type="button" 
-                                    onClick={() => { setShowEditModal(false); setEditingSession(null) }}
-                                    className="flex-1 rounded-lg border border-slate-700 px-4 py-2.5 font-semibold text-slate-300 hover:bg-slate-800 transition"
-                                >
-                                    Batal
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-
-            {/* Modal/Sheet: Manage/View Attendance */}
-            {showManageModal && selectedSession && (
-                <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50 animate-fadeIn">
-                    <div className="bg-slate-900 rounded-[2rem] border border-slate-800 p-6 max-w-4xl w-full shadow-2xl max-h-[85vh] flex flex-col">
-                        <div className="flex justify-between items-start pb-4 border-b border-slate-800 mb-4">
-                            <div>
-                                <span className="rounded-full bg-cyan-500/10 text-cyan-400 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider">
-                                    Sesi Absensi: {new Date(selectedSession.session_date).toLocaleDateString('id-ID')}
-                                </span>
-                                <h3 className="text-xl font-bold text-white mt-2">{selectedSession.title}</h3>
-                                <p className="text-slate-400 text-xs mt-1">{selectedSession.description || 'Tidak ada keterangan tambahan'}</p>
-                            </div>
-                            <button 
-                                onClick={() => { setShowManageModal(false); setSelectedSession(null); setManageRecords([]) }} 
-                                className="text-slate-400 hover:text-white transition text-lg"
-                            >
-                                ✕
-                            </button>
-                        </div>
-
-                        {/* List/Table in Modal */}
-                        <div className="overflow-y-auto flex-1 pr-1 scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent">
-                            <table className="min-w-full text-sm">
-                                <thead>
-                                    <tr className="text-left text-slate-400 border-b border-slate-800/80 pb-2">
-                                        <th className="pb-3 pr-4 font-semibold">Nama Anggota</th>
-                                        <th className="pb-3 pr-4 font-semibold">Status Kehadiran</th>
-                                        <th className="pb-3 font-semibold">Catatan Keterangan</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {manageRecords.length === 0 ? (
-                                        <tr>
-                                            <td colSpan="3" className="py-12 text-center text-slate-500">
-                                                Tidak ada rekaman absensi ditemukan
-                                            </td>
-                                        </tr>
-                                    ) : (
-                                        manageRecords.map(rec => (
-                                            <tr key={rec.user_id} className="border-b border-slate-800/40 text-slate-300">
-                                                <td className="py-3 pr-4 font-medium text-white">
-                                                    <div>
-                                                        <p className="font-semibold">{rec.nama}</p>
-                                                        <p className="text-[10px] text-slate-500">{rec.email}</p>
-                                                    </div>
-                                                </td>
-                                                <td className="py-3 pr-4">
-                                                    {!isReadOnly && isKetuaOrSekretaris ? (
-                                                        <div className="flex gap-1.5 flex-wrap">
-                                                            {['HADIR', 'SAKIT', 'IZIN', 'ALFA'].map(st => (
-                                                                <button
-                                                                    key={st}
-                                                                    type="button"
-                                                                    onClick={() => handleRecordStatusChange(rec.user_id, st)}
-                                                                    className={`px-3 py-1 rounded-full text-[10px] font-bold border transition ${
-                                                                        rec.status === st
-                                                                            ? st === 'HADIR' ? 'bg-emerald-500/25 border-emerald-500 text-emerald-300'
-                                                                                : st === 'SAKIT' ? 'bg-blue-500/25 border-blue-500 text-blue-300'
-                                                                                : st === 'IZIN' ? 'bg-amber-500/25 border-amber-500 text-amber-300'
-                                                                                : 'bg-rose-500/25 border-rose-500 text-rose-300'
-                                                                            : 'bg-slate-900 border-slate-800 text-slate-500 hover:border-slate-700 hover:text-slate-300'
-                                                                    }`}
-                                                                >
-                                                                    {st}
-                                                                </button>
-                                                            ))}
-                                                        </div>
-                                                    ) : (
-                                                        <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getStatusClass(rec.status)}`}>
-                                                            {rec.status}
-                                                        </span>
-                                                    )}
-                                                </td>
-                                                <td className="py-3">
-                                                    {!isReadOnly && isKetuaOrSekretaris ? (
-                                                        <input 
-                                                            type="text" 
-                                                            value={rec.notes || ''}
-                                                            placeholder="Opsional (misal alasan sakit, dll)"
-                                                            onChange={(e) => handleRecordNotesChange(rec.user_id, e.target.value)}
-                                                            className="bg-slate-950/80 border border-slate-800 rounded-lg px-3 py-1 text-xs text-white outline-none focus:border-cyan-500 transition w-full max-w-xs"
-                                                        />
-                                                    ) : (
-                                                        <span className="text-xs text-slate-400 italic">
-                                                            {rec.notes || '-'}
-                                                        </span>
-                                                    )}
-                                                </td>
-                                            </tr>
-                                        ))
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-
-                        {/* Save Action */}
-                        <div className="pt-4 border-t border-slate-800 flex justify-end gap-3 mt-4">
-                            <button 
-                                onClick={() => { setShowManageModal(false); setSelectedSession(null); setManageRecords([]) }} 
-                                className="rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 px-5 py-2 text-xs font-semibold transition"
-                            >
-                                Tutup
-                            </button>
-                            {!isReadOnly && isKetuaOrSekretaris && (
-                                <button 
-                                    onClick={handleSaveRecords}
-                                    disabled={savingRecords}
-                                    className="rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 px-6 py-2 text-xs font-bold transition disabled:opacity-50"
-                                >
-                                    {savingRecords ? 'Menyimpan...' : 'Simpan Perubahan'}
-                                </button>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            )}
+            <ManageAttendanceModal
+                showManageModal={showManageModal}
+                setShowManageModal={setShowManageModal}
+                selectedSession={selectedSession}
+                setSelectedSession={setSelectedSession}
+                manageRecords={manageRecords}
+                setManageRecords={setManageRecords}
+                isReadOnly={isReadOnly}
+                isKetuaOrSekretaris={isKetuaOrSekretaris}
+                handleRecordStatusChange={handleRecordStatusChange}
+                handleRecordNotesChange={handleRecordNotesChange}
+                handleSaveRecords={handleSaveRecords}
+                savingRecords={savingRecords}
+                getStatusClass={getStatusClass}
+            />
         </section>
     )
 }

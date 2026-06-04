@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import Swal from 'sweetalert2'
 import { exportMemberPDF } from '../pdfExport'
 
-export function MemberPage({ communityId, token, isReadOnly = false, currentUserRole = null }) {
+export function MemberPage({ communityId, token, isReadOnly = false, currentUserRole = null, refreshMemberships, currentUser = {} }) {
   const [members, setMembers] = useState([])
   const [applicants, setApplicants] = useState([])
   const [loading, setLoading] = useState(true)
@@ -36,6 +36,26 @@ export function MemberPage({ communityId, token, isReadOnly = false, currentUser
   useEffect(() => { if (communityId) fetchMembers() }, [communityId, currentUserRole])
 
   const handleChangeRole = async (userId, newRole) => {
+    if (newRole === 'KETUA') {
+      const confirm = await Swal.fire({
+        title: 'Pemindahan Jabatan Ketua',
+        text: 'Anda yakin ingin mengangkat anggota ini menjadi Ketua baru? Anda akan otomatis turun jabatan menjadi Anggota.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#06b6d4',
+        cancelButtonColor: '#334155',
+        confirmButtonText: 'Ya, Angkat Ketua Baru',
+        cancelButtonText: 'Batal',
+        background: '#0f172a',
+        color: '#fff'
+      })
+
+      if (!confirm.isConfirmed) {
+        fetchMembers()
+        return
+      }
+    }
+
     try {
       const res = await fetch(`http://localhost:3000/api/communities/${communityId}/members/${userId}/role`, {
         method: 'PUT',
@@ -78,6 +98,7 @@ export function MemberPage({ communityId, token, isReadOnly = false, currentUser
               background: '#0f172a', color: '#fff', confirmButtonColor: '#06b6d4'
             })
           }
+          fetchMembers() // reset the dropdown if failed
           return;
         }
         throw new Error(data.message || 'Gagal mengubah jabatan')
@@ -93,6 +114,12 @@ export function MemberPage({ communityId, token, isReadOnly = false, currentUser
         timer: 1500,
         showConfirmButton: false
       })
+      
+      // If we transferred KETUA role, we must refresh the app-wide memberships
+      if (newRole === 'KETUA' && typeof refreshMemberships === 'function') {
+        await refreshMemberships()
+      }
+      
       fetchMembers()
     } catch (err) { 
       Swal.fire({
@@ -103,6 +130,45 @@ export function MemberPage({ communityId, token, isReadOnly = false, currentUser
         color: '#fff',
         confirmButtonColor: '#06b6d4'
       })
+      fetchMembers() // reset the dropdown if error
+    }
+  }
+
+  const handleResign = async () => {
+    const confirm = await Swal.fire({
+      title: 'Undur Diri dari Ketua?',
+      text: 'Anda yakin ingin mengundurkan diri? Anda akan menjadi Anggota biasa dan kehilangan akses pengurus. Pastikan ada orang lain yang bisa memimpin!',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#334155',
+      confirmButtonText: 'Ya, Undur Diri',
+      cancelButtonText: 'Batal',
+      background: '#0f172a',
+      color: '#fff'
+    })
+
+    if (confirm.isConfirmed) {
+      try {
+        const res = await fetch(`http://localhost:3000/api/communities/${communityId}/members/resign`, {
+          method: 'PUT',
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+        
+        if (res.ok) {
+          Swal.fire({
+            icon: 'success', title: 'Berhasil', text: 'Anda telah mengundurkan diri dan kini menjadi Anggota.',
+            background: '#0f172a', color: '#fff', confirmButtonColor: '#06b6d4'
+          })
+          if (typeof refreshMemberships === 'function') await refreshMemberships()
+          fetchMembers()
+        } else {
+          const data = await res.json()
+          throw new Error(data.message || 'Gagal mengundurkan diri')
+        }
+      } catch (err) {
+        Swal.fire({ icon: 'error', title: 'Gagal', text: err.message, background: '#0f172a', color: '#fff' })
+      }
     }
   }
 
@@ -397,12 +463,19 @@ export function MemberPage({ communityId, token, isReadOnly = false, currentUser
                         <select onChange={(e) => { if (e.target.value) handleChangeRole(member.user_id, e.target.value) }} defaultValue=""
                           className="rounded-lg border border-slate-700 bg-slate-800 px-2 py-1 text-xs text-white outline-none">
                           <option value="" disabled>Ubah Jabatan</option>
-                          {['ANGGOTA','SEKRETARIS','BENDAHARA','KADIV'].filter(r => r !== member.community_role).map(r => (
+                          {['ANGGOTA','SEKRETARIS','BENDAHARA','KADIV', 'KETUA'].filter(r => r !== member.community_role).map(r => (
                             <option key={r} value={r}>{r}</option>
                           ))}
                         </select>
                         <button onClick={() => handleRemove(member.user_id)} className="rounded-lg px-2 py-1 text-xs bg-red-500/20 text-red-300 hover:bg-red-500/30 transition">Hapus</button>
                       </div>
+                    </td>
+                  )}
+                  {!isReadOnly && currentUserRole === 'KETUA' && member.community_role === 'KETUA' && member.user_id === currentUser.id && (
+                    <td className="py-4">
+                      <button onClick={handleResign} className="rounded-lg px-3 py-1.5 text-xs bg-red-500/20 text-red-300 hover:bg-red-500/30 transition">
+                        Undur Diri
+                      </button>
                     </td>
                   )}
                 </tr>

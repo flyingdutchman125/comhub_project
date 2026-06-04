@@ -132,28 +132,36 @@ const assignRole = async (req, res) => {
     const currentUserId = req.user.id; // ID pengurus yang sedang login
 
     try {
+        const fs = require('fs');
+        fs.appendFileSync('debug.log', `\n[assignRole] currentUserId: ${currentUserId}, communityId: ${communityId}, targetUserId: ${targetUserId}, newRole: ${newRole}\n`);
+        
         // 1. Otorisasi: Pastikan yang melakukan ini HANYA Ketua
         const [checkRole] = await db.query(
             'SELECT community_role FROM community_members WHERE user_id = ? AND community_id = ? AND status_keanggotaan = "AKTIF"',
             [currentUserId, communityId]
         );
 
+        fs.appendFileSync('debug.log', `[assignRole] checkRole result: ${JSON.stringify(checkRole)}\n`);
+
         if (checkRole.length === 0 || checkRole[0].community_role !== 'KETUA') {
+            fs.appendFileSync('debug.log', `[assignRole] Access denied\n`);
             return res.status(403).json({ message: 'Akses ditolak! Hanya Ketua yang dapat mengubah struktur kepengurusan.' });
         }
 
         // 2. Validasi role yang dimasukkan
-        const validRoles = ['ANGGOTA', 'SEKRETARIS', 'BENDAHARA', 'KADIV'];
+        const validRoles = ['ANGGOTA', 'SEKRETARIS', 'BENDAHARA', 'KADIV', 'KETUA'];
         if (!validRoles.includes(newRole)) {
+            fs.appendFileSync('debug.log', `[assignRole] Invalid role\n`);
             return res.status(400).json({ message: 'Jabatan tidak valid!' });
         }
 
         // 2.5 Validasi tambahan: Jika akan diangkat menjadi pengurus inti, pastikan hanya di 1 komunitas
-        if (['SEKRETARIS', 'BENDAHARA'].includes(newRole)) {
+        if (['SEKRETARIS', 'BENDAHARA', 'KETUA'].includes(newRole)) {
             const [userCommunities] = await db.query(
                 'SELECT community_id FROM community_members WHERE user_id = ? AND status_keanggotaan = "AKTIF"',
                 [targetUserId]
             );
+            fs.appendFileSync('debug.log', `[assignRole] userCommunities count: ${userCommunities.length}\n`);
             if (userCommunities.length > 1) {
                 return res.status(400).json({
                     error_code: 'MULTIPLE_COMMUNITIES',
@@ -162,19 +170,42 @@ const assignRole = async (req, res) => {
             }
         }
 
-        // 3. Update jabatan anggota target
+        // 3. Update jabatan
+        if (newRole === 'KETUA') {
+            fs.appendFileSync('debug.log', `[assignRole] Changing KETUA. parseInt(targetUserId): ${parseInt(targetUserId)}, currentUserId: ${currentUserId}\n`);
+            if (parseInt(targetUserId) === currentUserId) {
+                return res.status(400).json({ message: 'Anda sudah menjabat sebagai Ketua!' });
+            }
+            
+            // Turunkan jabatan ketua lama menjadi ANGGOTA
+            const [updateResult1] = await db.query(
+                'UPDATE community_members SET community_role = "ANGGOTA" WHERE user_id = ? AND community_id = ?',
+                [currentUserId, communityId]
+            );
+            fs.appendFileSync('debug.log', `[assignRole] Demote KETUA result: ${JSON.stringify(updateResult1)}\n`);
+        }
+
         const [result] = await db.query(
             'UPDATE community_members SET community_role = ? WHERE user_id = ? AND community_id = ? AND status_keanggotaan = "AKTIF"',
             [newRole, targetUserId, communityId]
         );
+        fs.appendFileSync('debug.log', `[assignRole] Promote newRole result: ${JSON.stringify(result)}\n`);
 
         if (result.affectedRows === 0) {
             return res.status(404).json({ message: 'Anggota tidak ditemukan atau statusnya belum aktif.' });
         }
 
+        if (newRole === 'KETUA') {
+            fs.appendFileSync('debug.log', `[assignRole] Success KETUA transferred\n`);
+            return res.status(200).json({ message: 'Berhasil! Jabatan Ketua telah dialihkan, dan Anda kini menjadi Anggota.' });
+        }
+        
+        fs.appendFileSync('debug.log', `[assignRole] Success normal role transferred\n`);
         res.status(200).json({ message: `Berhasil! Jabatan anggota telah diperbarui menjadi ${newRole}.` });
 
     } catch (error) {
+        const fs = require('fs');
+        fs.appendFileSync('debug.log', `[assignRole] Error: ${error.message}\n`);
         console.error(error);
         res.status(500).json({ message: 'Terjadi kesalahan saat mengubah jabatan.' });
     }
@@ -238,11 +269,45 @@ const getCommunityMembers = async (req, res) => {
     }
 };
 
+// --- FITUR MENGUNDURKAN DIRI DARI JABATAN KETUA ---
+const resignFromKetua = async (req, res) => {
+    const communityId = req.params.id;
+    const currentUserId = req.user.id;
+
+    try {
+        // 1. Pastikan yang melakukan ini HANYA Ketua
+        const [checkRole] = await db.query(
+            'SELECT community_role FROM community_members WHERE user_id = ? AND community_id = ? AND status_keanggotaan = "AKTIF"',
+            [currentUserId, communityId]
+        );
+
+        if (checkRole.length === 0 || checkRole[0].community_role !== 'KETUA') {
+            return res.status(403).json({ message: 'Akses ditolak! Anda bukan Ketua.' });
+        }
+
+        // 2. Turunkan jabatan menjadi ANGGOTA
+        const [result] = await db.query(
+            'UPDATE community_members SET community_role = "ANGGOTA" WHERE user_id = ? AND community_id = ?',
+            [currentUserId, communityId]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: 'Gagal mengundurkan diri, keanggotaan tidak ditemukan.' });
+        }
+
+        res.status(200).json({ message: 'Anda telah berhasil mengundurkan diri dan kini menjadi Anggota.' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Terjadi kesalahan saat mengundurkan diri.' });
+    }
+};
+
 module.exports = {
     joinCommunity,
     getApplicants,
     approveApplicant,
     assignRole,
     removeMember,
-    getCommunityMembers
+    getCommunityMembers,
+    resignFromKetua
 };

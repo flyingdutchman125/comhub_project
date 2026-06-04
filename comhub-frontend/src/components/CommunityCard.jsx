@@ -1,6 +1,6 @@
 export function CommunityCard({ community, onSelect }) {
   return (
-    <button
+    <div
       onClick={() => onSelect(community)}
       className="text-left rounded-2xl border border-slate-800 bg-slate-950/70 hover:border-slate-700 hover:bg-slate-900/80 transition overflow-hidden group cursor-pointer h-full relative flex flex-col"
     >
@@ -43,6 +43,6 @@ export function CommunityCard({ community, onSelect }) {
           Lihat Detail →
         </button>
       </div>
-    </button>
+    </div>
   )
 }

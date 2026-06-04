@@ -15,7 +15,7 @@ import CropModal from './components/CropModal'
 import { AttendancePage } from './pages/AttendancePage'
 import { ApprovalPage } from './pages/ApprovalPage'
 import { SettingsPage } from './pages/SettingsPage'
-
+import { DashboardPage } from './pages/DashboardPage'
 import { CreateCommunityModal } from './components/CreateCommunityModal'
 import { NewsFormModal } from './components/NewsFormModal'
 import { NewsDetailModal } from './components/NewsDetailModal'
@@ -388,220 +388,35 @@ function App() {
           />
 
           {activeTab === 'Dashboard' ? (
-            <>
-              <section className="grid gap-6 lg:grid-cols-3 mb-8">
-                {[
-                  { label: 'Total Komunitas', value: stats.totalCommunities, accent: 'bg-blue-500/20 text-blue-300' },
-                  { label: 'Total Program Kerja', value: stats.totalProjects, accent: 'bg-purple-500/20 text-purple-400' },
-                  { label: 'Total Anggota', value: stats.totalMembers, accent: 'bg-green-500/20 text-green-400' }
-                ].map((item) => (
-                  <div key={item.label} className="rounded-[2rem] border border-slate-800 bg-slate-900/90 p-6">
-                    <div className={`inline-flex items-center gap-3 rounded-full px-3 py-2 ${item.accent}`}>
-                      <p className="text-xs uppercase tracking-[0.3em] text-slate-200">{item.label}</p>
-                    </div>
-                    <p className="mt-7 text-4xl font-semibold text-white">{item.value}</p>
-                    <p className="mt-2 text-sm text-slate-400">Data dari database</p>
-                  </div>
-                ))}
-              </section>
-
-              <section className="grid gap-6 xl:grid-cols-[1.45fr_1fr]">
-                <div className="flex flex-col gap-6">
-                  {/* Top Communities Widget */}
-                  {topCommunities.length > 0 && (
-                    <div className="rounded-[2rem] border border-cyan-500/20 bg-gradient-to-br from-slate-900 to-slate-950 p-6 relative overflow-hidden shadow-lg shadow-cyan-500/5">
-                      <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
-                        <span className="text-8xl">🏆</span>
-                      </div>
-                      <div className="relative z-10">
-                        <div className="flex items-center gap-3 mb-6">
-                          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-cyan-500/20 text-cyan-400 text-xl">
-                            🔥
-                          </span>
-                          <div>
-                            <h3 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">Top Komunitas Berprestasi</h3>
-                            <p className="text-xs text-slate-400">Paling banyak menyelesaikan proyek</p>
-                          </div>
-                        </div>
-                        <div className="flex flex-wrap gap-4">
-                          {topCommunities.map((c, index) => (
-                            <div key={c.id} className="flex-1 min-w-[200px] flex items-center gap-4 rounded-2xl bg-slate-800/50 p-4 border border-slate-700/50 hover:border-cyan-500/50 transition cursor-pointer"
-                              onClick={() => { setSelectedCommunity(c); setShowDetailPage(true) }}>
-                              <div className="relative flex-shrink-0">
-                                {c.logo ? (
-                                  <img src={c.logo} alt={c.nama_komunitas} className="h-12 w-12 rounded-full object-cover border border-slate-700" />
-                                ) : (
-                                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 text-lg font-bold text-slate-950">
-                                    {c.nama_komunitas.charAt(0)}
-                                  </div>
-                                )}
-                                <div className="absolute -top-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full bg-yellow-500 text-[10px] font-bold text-slate-900 border-2 border-slate-900">
-                                  #{index + 1}
-                                </div>
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <h4 className="text-sm font-semibold text-white truncate">{c.nama_komunitas}</h4>
-                                <p className="text-xs text-cyan-400 font-medium">{c.completedProjects ?? c.completed_projects} Proyek Selesai</p>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Popular Communities Widget (Kunjungan Tertinggi Minggu Ini) */}
-                  {popularCommunities.length > 0 && (
-                    <div className="rounded-[2rem] border border-emerald-500/20 bg-gradient-to-br from-slate-900 to-slate-950 p-6 relative overflow-hidden shadow-lg shadow-emerald-500/5">
-                      <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
-                        <span className="text-8xl">📈</span>
-                      </div>
-                      <div className="relative z-10">
-                        <div className="flex items-center gap-3 mb-6">
-                          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 text-xl">
-                            🚀
-                          </span>
-                          <div>
-                            <h3 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-500">Terpopuler Minggu Ini</h3>
-                            <p className="text-xs text-slate-400">Komunitas dengan kunjungan detail tertinggi minggu ini</p>
-                          </div>
-                        </div>
-                        <div className="flex flex-wrap gap-4">
-                          {popularCommunities.map((c, index) => (
-                            <div key={c.id} className="flex-1 min-w-[200px] flex items-center gap-4 rounded-2xl bg-slate-800/50 p-4 border border-slate-700/50 hover:border-emerald-500/50 transition cursor-pointer"
-                              onClick={() => { setSelectedCommunity(c); setShowDetailPage(true) }}>
-                              <div className="relative flex-shrink-0">
-                                {c.logo ? (
-                                  <img src={c.logo} alt={c.name || c.nama_komunitas} className="h-12 w-12 rounded-full object-cover border border-slate-700" />
-                                ) : (
-                                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 text-lg font-bold text-slate-950">
-                                    {(c.name || c.nama_komunitas || '').charAt(0)}
-                                  </div>
-                                )}
-                                <div className="absolute -top-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-[10px] font-bold text-slate-950 border-2 border-slate-900">
-                                  #{index + 1}
-                                </div>
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <h4 className="text-sm font-semibold text-white truncate">{c.name || c.nama_komunitas}</h4>
-                                <p className="text-xs text-emerald-400 font-medium">{c.visitCount} Kunjungan</p>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Daftar Komunitas */}
-                  <div className="rounded-[2rem] border border-slate-800 bg-slate-900/90 p-6">
-                    <div className="flex items-center justify-between gap-4 mb-6">
-                      <div>
-                        <h3 className="text-xl font-semibold text-white">Daftar Komunitas</h3>
-                        <p className="text-sm text-slate-500">Pilih komunitas untuk mengelola</p>
-                      </div>
-                      <span className="rounded-full bg-slate-800 px-3 py-1 text-xs text-slate-400">{communities.length} Komunitas</span>
-                    </div>
-                    {loadingCommunities ? (
-                      <div className="flex justify-center py-8"><div className="h-8 w-8 rounded-full border-2 border-slate-700 border-t-cyan-500 animate-spin" /></div>
-                    ) : communities.length === 0 ? (
-                      <div className="py-8 text-center">
-                        <p className="text-slate-400">Belum ada komunitas</p>
-                        {user?.role !== 'KEMAHASISWAAN' && user?.role !== 'DOSEN' && (
-                          <button onClick={() => setShowCreateModal(true)} className="mt-4 rounded-lg bg-cyan-500/20 text-cyan-300 px-4 py-2 text-sm hover:bg-cyan-500/30 transition">
-                            Buat Komunitas Pertama Anda
-                          </button>
-                        )}
-                      </div>
-                    ) : filteredCommunities.length === 0 ? (
-                      <div className="py-8 text-center">
-                        <p className="text-slate-400">Tidak ada komunitas yang sesuai dengan pencarian Anda.</p>
-                      </div>
-                    ) : (
-                      <>
-                        <div className="grid gap-4 sm:grid-cols-2">
-                          {filteredCommunities.slice((currentPage - 1) * 6, currentPage * 6).map((c) => (
-                            <CommunityCard key={c.id} community={c} onSelect={(comm) => { setSelectedCommunity(comm); setShowDetailPage(true) }} />
-                          ))}
-                        </div>
-                        {Math.ceil(filteredCommunities.length / 6) > 1 && (
-                          <div className="mt-6 flex justify-center gap-2">
-                            {Array.from({ length: Math.ceil(filteredCommunities.length / 6) }).map((_, i) => (
-                              <button
-                                key={i}
-                                onClick={() => setCurrentPage(i + 1)}
-                                className={`w-8 h-8 rounded-full text-sm font-semibold transition ${currentPage === i + 1 ? 'bg-cyan-500 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
-                              >
-                                {i + 1}
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                <aside className="rounded-[2rem] border border-slate-800 bg-slate-900/90 p-6 flex flex-col max-h-[550px]">
-                  <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-800">
-                    <div>
-                      <h3 className="text-xl font-semibold text-white">Berita Terkini</h3>
-                      <p className="text-xs text-slate-500">Informasi & pengumuman kampus</p>
-                    </div>
-                    {user?.role === 'KEMAHASISWAAN' && (
-                      <button 
-                        onClick={() => { setEditingNews(null); setNewsFormData({ title: '', content: '' }); setShowNewsModal(true) }}
-                        className="rounded-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold px-3 py-1.5 text-xs transition cursor-pointer"
-                      >
-                        + Tambah
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="space-y-4 overflow-y-auto pr-1 flex-1 scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent">
-                    {loadingNews ? (
-                      <div className="flex justify-center py-8"><div className="h-8 w-8 rounded-full border-2 border-slate-700 border-t-cyan-500 animate-spin" /></div>
-                    ) : newsList.length === 0 ? (
-                      <div className="py-8 text-center">
-                        <p className="text-slate-400 text-sm">Belum ada berita terbaru.</p>
-                      </div>
-                    ) : (
-                      newsList.map((news) => (
-                        <div 
-                          key={news.id} 
-                          onClick={() => handleOpenNewsDetail(news)}
-                          className="group relative rounded-2xl border border-slate-800 bg-slate-950/40 p-4 hover:border-slate-700 transition cursor-pointer duration-200"
-                        >
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="rounded-full bg-cyan-500/10 text-cyan-400 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider">
-                              {news.community_name || 'Info Kampus'}
-                            </span>
-                            <span className="text-[10px] text-slate-500">{new Date(news.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}</span>
-                          </div>
-                          <h4 className="text-sm font-semibold text-white group-hover:text-cyan-300 transition duration-200 line-clamp-1">{news.title}</h4>
-                          <p className="text-xs text-slate-400 mt-1 line-clamp-2 leading-relaxed">{news.content}</p>
-                          <div className="flex items-center justify-between mt-3 pt-2 border-t border-slate-800/40">
-                            <p className="text-[10px] text-slate-500 truncate max-w-[150px]">✍️ {news.author_name || 'Admin'}</p>
-                            {(user?.role === 'KEMAHASISWAAN' || (news.community_id && ['KETUA', 'KADIV'].includes(getCommunityRole(news.community_id)))) && (
-                              <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                                <button onClick={() => handleEditNewsClick(news)} className="text-slate-400 hover:text-cyan-400 text-xs transition cursor-pointer" title="Edit">✏️</button>
-                                <button onClick={() => handleDeleteNews(news.id)} className="text-slate-400 hover:text-red-400 text-xs transition cursor-pointer" title="Hapus">🗑️</button>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </aside>
-              </section>
-            </>
+            <DashboardPage 
+              stats={stats}
+              topCommunities={topCommunities}
+              popularCommunities={popularCommunities}
+              newsList={newsList}
+              communities={communities}
+              filteredCommunities={filteredCommunities}
+              loadingCommunities={loadingCommunities}
+              loadingNews={loadingNews}
+              currentPage={currentPage}
+              setCurrentPage={setCurrentPage}
+              setShowCreateModal={setShowCreateModal}
+              user={user}
+              setSelectedCommunity={setSelectedCommunity}
+              setShowDetailPage={setShowDetailPage}
+              setEditingNews={setEditingNews}
+              setNewsFormData={setNewsFormData}
+              setShowNewsModal={setShowNewsModal}
+              handleOpenNewsDetail={handleOpenNewsDetail}
+              getCommunityRole={getCommunityRole}
+              handleEditNewsClick={handleEditNewsClick}
+              handleDeleteNews={handleDeleteNews}
+            />
           ) : activeTab === 'Project Tracking' && selectedCommunity ? (
             <ProjectTrackingPage communityId={selectedCommunity.id} token={token} isReadOnly={isReadOnly} currentUserRole={userRoleInSelected} currentUser={user} />
           ) : activeTab === 'Financial' && selectedCommunity ? (
             <FinancialPage communityId={selectedCommunity.id} token={token} isReadOnly={isReadOnly} currentUserRole={userRoleInSelected} />
           ) : activeTab === 'Member' && selectedCommunity ? (
-            <MemberPage communityId={selectedCommunity.id} token={token} isReadOnly={isReadOnly} currentUserRole={userRoleInSelected} />
+            <MemberPage communityId={selectedCommunity.id} token={token} isReadOnly={isReadOnly} currentUserRole={userRoleInSelected} refreshMemberships={refreshMemberships} currentUser={user} />
           ) : activeTab === 'Absensi' && selectedCommunity ? (
             <AttendancePage communityId={selectedCommunity.id} token={token} isReadOnly={isReadOnly} currentUserRole={userRoleInSelected} />
           ) : activeTab === 'Berita Komunitas' && selectedCommunity ? (
