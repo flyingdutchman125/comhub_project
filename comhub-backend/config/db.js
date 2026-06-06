@@ -28,15 +28,15 @@ promisePool.getConnection()
             await promisePool.query(`
                 CREATE TABLE IF NOT EXISTS users (
                     id INT AUTO_INCREMENT PRIMARY KEY,
-                    nama VARCHAR(255) NOT NULL,
-                    email VARCHAR(255) NOT NULL UNIQUE,
+                    nama VARCHAR(100) NOT NULL,
+                    email VARCHAR(100) NOT NULL UNIQUE,
                     password VARCHAR(255) NOT NULL,
-                    global_role ENUM('MAHASISWA', 'DOSEN_PEMBINA', 'KEMAHASISWAAN', 'ADMIN') DEFAULT 'MAHASISWA',
+                    global_role ENUM('MAHASISWA', 'DOSEN', 'KEMAHASISWAAN') DEFAULT 'MAHASISWA',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     prodi VARCHAR(100) DEFAULT NULL,
                     bio TEXT DEFAULT NULL,
                     skills TEXT DEFAULT NULL,
-                    foto_profile LONGTEXT DEFAULT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    foto_profile LONGTEXT DEFAULT NULL
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
             `);
             console.log('Inisialisasi tabel users selesai.');
