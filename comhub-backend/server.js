@@ -117,6 +117,6 @@ io.on('connection', (socket) => {
 });
 
 // Jalankan server
-server.listen(PORT, () => {
-    console.log(`Server ComHub berjalan di http://localhost:${PORT}`);
+server.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server ComHub berjalan di port ${PORT}`);
 });
