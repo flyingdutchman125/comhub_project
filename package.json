@@ -1,0 +1,11 @@
+{
+  "name": "comhub-root",
+  "version": "1.0.0",
+  "scripts": {
+    "install": "cd comhub-backend && npm install",
+    "start": "cd comhub-backend && node server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
