@@ -13,7 +13,7 @@ export function FinancialPage({ communityId, token, isReadOnly = false, currentU
 
   const fetchFinancial = async () => {
     try {
-      const res = await fetch(`http://localhost:3000/api/communities/${communityId}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/communities/${communityId}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       if (res.ok) {
@@ -29,7 +29,7 @@ export function FinancialPage({ communityId, token, isReadOnly = false, currentU
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
-      const res = await fetch(`http://localhost:3000/api/communities/${communityId}/finances`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/communities/${communityId}/finances`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify(formData)
@@ -78,7 +78,7 @@ export function FinancialPage({ communityId, token, isReadOnly = false, currentU
 
     if (result.isConfirmed) {
       try {
-        const res = await fetch(`http://localhost:3000/api/finances/${id}`, {
+        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/finances/${id}`, {
           method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` }
         })
         const data = await res.json()
@@ -109,7 +109,7 @@ export function FinancialPage({ communityId, token, isReadOnly = false, currentU
   const handleExport = async () => {
     setExporting(true)
     try {
-      const res = await fetch(`http://localhost:3000/api/communities/${communityId}/report`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/communities/${communityId}/report`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       const data = await res.json()

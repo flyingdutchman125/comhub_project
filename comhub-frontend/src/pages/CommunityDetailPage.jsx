@@ -18,7 +18,7 @@ export function CommunityDetailPage({ community, onBack }) {
   // Fetch data real dari API
   const fetchDetail = useCallback(async () => {
     try {
-      const res = await fetch(`http://localhost:3000/api/communities/${community.id}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/communities/${community.id}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       if (res.status === 401 || res.status === 403) {
@@ -41,7 +41,7 @@ export function CommunityDetailPage({ community, onBack }) {
 
   const fetchReviews = useCallback(async () => {
     try {
-      const res = await fetch(`http://localhost:3000/api/communities/${community.id}/reviews`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/communities/${community.id}/reviews`, {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       })
       if (res.ok) {
@@ -65,7 +65,7 @@ export function CommunityDetailPage({ community, onBack }) {
     e.preventDefault()
     setIsSubmittingReview(true)
     try {
-      const res = await fetch(`http://localhost:3000/api/communities/${community.id}/reviews`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/communities/${community.id}/reviews`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -89,7 +89,7 @@ export function CommunityDetailPage({ community, onBack }) {
   const handleJoinCommunity = async () => {
     setIsJoining(true)
     try {
-      const res = await fetch(`http://localhost:3000/api/communities/${community.id}/join`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/communities/${community.id}/join`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -118,7 +118,7 @@ export function CommunityDetailPage({ community, onBack }) {
 
   const handleUpgradeUKM = async () => {
     try {
-      const res = await fetch(`http://localhost:3000/api/communities/${detail.id}/upgrade`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/communities/${detail.id}/upgrade`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

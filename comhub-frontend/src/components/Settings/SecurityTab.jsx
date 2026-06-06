@@ -10,7 +10,7 @@ export default function SecurityTab({ token }) {
       return Swal.fire({ icon: 'error', title: 'Gagal', text: 'Konfirmasi password baru tidak cocok!', background: '#0f172a', color: '#fff' });
     }
     try {
-      const res = await fetch('http://localhost:3000/api/auth/change-password', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/auth/change-password`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ oldPassword: passwordForm.oldPassword, newPassword: passwordForm.newPassword })

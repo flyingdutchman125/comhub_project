@@ -75,7 +75,7 @@ function App() {
     if (!token) return
     setLoadingNews(true)
     try {
-      const res = await fetch('http://localhost:3000/api/news', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/news`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       if (!res.ok) throw new Error('Gagal mengambil berita')
@@ -103,8 +103,8 @@ function App() {
 
     try {
       const url = editingNews 
-        ? `http://localhost:3000/api/news/${editingNews.id}` 
-        : 'http://localhost:3000/api/news'
+        ? `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/news/${editingNews.id}` 
+        : `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/news`
       const method = editingNews ? 'PUT' : 'POST'
 
       const res = await fetch(url, {
@@ -155,7 +155,7 @@ function App() {
 
     if (result.isConfirmed) {
       try {
-        const res = await fetch(`http://localhost:3000/api/news/${newsId}`, {
+        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/news/${newsId}`, {
           method: 'DELETE',
           headers: { 'Authorization': `Bearer ${token}` }
         })
@@ -202,9 +202,9 @@ function App() {
       setLoadingCommunities(true)
       try {
         const [res, topRes, popularRes] = await Promise.all([
-          fetch('http://localhost:3000/api/communities', { headers: { 'Authorization': `Bearer ${token}` } }),
-          fetch('http://localhost:3000/api/communities/top'),
-          fetch('http://localhost:3000/api/communities/popular')
+          fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/communities`, { headers: { 'Authorization': `Bearer ${token}` } }),
+          fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/communities/top`),
+          fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/communities/popular`)
         ])
         if (!res.ok) throw new Error('Failed to fetch communities')
         

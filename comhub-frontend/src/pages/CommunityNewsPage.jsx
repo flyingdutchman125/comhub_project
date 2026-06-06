@@ -17,7 +17,7 @@ export function CommunityNewsPage({ communityId, token, communityName }) {
   const fetchNews = async () => {
     setLoading(true)
     try {
-      const res = await fetch(`http://localhost:3000/api/news?communityId=${communityId}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/news?communityId=${communityId}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       if (!res.ok) throw new Error('Gagal mengambil berita komunitas')
@@ -61,8 +61,8 @@ export function CommunityNewsPage({ communityId, token, communityName }) {
 
     try {
       const url = editingNews 
-        ? `http://localhost:3000/api/news/${editingNews.id}` 
-        : 'http://localhost:3000/api/news'
+        ? `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/news/${editingNews.id}` 
+        : `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/news`
       const method = editingNews ? 'PUT' : 'POST'
 
       const res = await fetch(url, {
@@ -116,7 +116,7 @@ export function CommunityNewsPage({ communityId, token, communityName }) {
 
     if (result.isConfirmed) {
       try {
-        const res = await fetch(`http://localhost:3000/api/news/${newsId}`, {
+        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/news/${newsId}`, {
           method: 'DELETE',
           headers: { 'Authorization': `Bearer ${token}` }
         })

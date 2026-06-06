@@ -19,7 +19,7 @@ export function AuthProvider({ children }) {
 
         // Langsung fetch memberships terbaru dari tabel community_members
         try {
-          const res = await fetch('http://localhost:3000/api/communities/my', {
+          const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/communities/my`, {
             headers: { 'Authorization': `Bearer ${storedToken}` }
           })
           if (res.status === 401 || res.status === 403) {
@@ -53,7 +53,7 @@ export function AuthProvider({ children }) {
 
   const login = useCallback(async (email, password) => {
     try {
-      const response = await fetch('http://localhost:3000/api/auth/login', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -83,7 +83,7 @@ export function AuthProvider({ children }) {
 
   const register = useCallback(async (nama, email, password) => {
     try {
-      const response = await fetch('http://localhost:3000/api/auth/register', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -131,7 +131,7 @@ export function AuthProvider({ children }) {
     const tkn = currentToken || token
     if (!tkn) return
     try {
-      const res = await fetch('http://localhost:3000/api/communities/my', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/communities/my`, {
         headers: { 'Authorization': `Bearer ${tkn}` }
       })
       if (res.ok) {

@@ -66,7 +66,7 @@ function EditProfileModal({ profile, onClose, onSaved, token }) {
     setSaving(true); setError(null)
     try {
       const skills = form.skills.split(',').map(s => s.trim()).filter(Boolean)
-      const res = await fetch('http://localhost:3000/api/users/profile', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/users/profile`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ ...form, skills })
@@ -176,7 +176,7 @@ function SubmitTaskModal({ task, onClose, onSubmitted, token }) {
     if (!file) return setError('Pilih file terlebih dahulu.')
     setLoading(true); setError(null)
     try {
-      const res = await fetch(`http://localhost:3000/api/users/tasks/${task.id}/submit`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/users/tasks/${task.id}/submit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ file_name: file.name, file_data: file.data, file_type: file.type, notes })
@@ -236,8 +236,8 @@ export function PortfolioPage() {
     setLoading(true)
     try {
       const [p, t] = await Promise.all([
-        fetch('http://localhost:3000/api/users/portfolio', { headers: { 'Authorization': `Bearer ${token}` } }).then(r => r.json()),
-        fetch('http://localhost:3000/api/users/tasks',     { headers: { 'Authorization': `Bearer ${token}` } }).then(r => r.json()),
+        fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/users/portfolio`, { headers: { 'Authorization': `Bearer ${token}` } }).then(r => r.json()),
+        fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/users/tasks`,     { headers: { 'Authorization': `Bearer ${token}` } }).then(r => r.json()),
       ])
       setData(p)
       setMyTasks(Array.isArray(t) ? t : [])

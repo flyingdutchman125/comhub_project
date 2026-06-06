@@ -30,7 +30,7 @@ export function AttendancePage({ communityId, token, isReadOnly = false, current
         setLoading(true)
         try {
             // Fetch Sessions
-            const resSessions = await fetch(`http://localhost:3000/api/communities/${communityId}/attendance/sessions`, {
+            const resSessions = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/communities/${communityId}/attendance/sessions`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             })
             if (resSessions.ok) {
@@ -39,7 +39,7 @@ export function AttendancePage({ communityId, token, isReadOnly = false, current
             }
 
             // Fetch Summary
-            const resSummary = await fetch(`http://localhost:3000/api/communities/${communityId}/attendance/summary`, {
+            const resSummary = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/communities/${communityId}/attendance/summary`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             })
             if (resSummary.ok) {
@@ -63,7 +63,7 @@ export function AttendancePage({ communityId, token, isReadOnly = false, current
         if (!formData.title || !formData.session_date) return
 
         try {
-            const res = await fetch(`http://localhost:3000/api/communities/${communityId}/attendance/sessions`, {
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/communities/${communityId}/attendance/sessions`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -113,7 +113,7 @@ export function AttendancePage({ communityId, token, isReadOnly = false, current
     const handleEditSession = async (e) => {
         e.preventDefault()
         try {
-            const res = await fetch(`http://localhost:3000/api/attendance/sessions/${editingSession.id}`, {
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/attendance/sessions/${editingSession.id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -169,7 +169,7 @@ export function AttendancePage({ communityId, token, isReadOnly = false, current
 
         if (result.isConfirmed) {
             try {
-                const res = await fetch(`http://localhost:3000/api/attendance/sessions/${sessionId}`, {
+                const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/attendance/sessions/${sessionId}`, {
                     method: 'DELETE',
                     headers: { 'Authorization': `Bearer ${token}` }
                 })
@@ -205,7 +205,7 @@ export function AttendancePage({ communityId, token, isReadOnly = false, current
         setSelectedSession(session)
         setShowManageModal(true)
         try {
-            const res = await fetch(`http://localhost:3000/api/attendance/sessions/${session.id}`, {
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/attendance/sessions/${session.id}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             })
             if (res.ok) {
@@ -240,7 +240,7 @@ export function AttendancePage({ communityId, token, isReadOnly = false, current
     const handleSaveRecords = async () => {
         setSavingRecords(true)
         try {
-            const res = await fetch(`http://localhost:3000/api/attendance/sessions/${selectedSession.id}/records`, {
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/attendance/sessions/${selectedSession.id}/records`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -297,7 +297,7 @@ export function AttendancePage({ communityId, token, isReadOnly = false, current
 
             if (!result.isConfirmed) return
 
-            const res = await fetch(`http://localhost:3000/api/attendance/sessions/${session.id}/self`, {
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/attendance/sessions/${session.id}/self`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

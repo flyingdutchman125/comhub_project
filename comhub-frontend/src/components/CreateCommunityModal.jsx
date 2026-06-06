@@ -9,7 +9,7 @@ export function CreateCommunityModal({ isOpen, onClose, onSuccess, token }) {
     e.preventDefault()
     setLoading(true); setError(null)
     try {
-      const res = await fetch('http://localhost:3000/api/communities', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/communities`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify(formData)

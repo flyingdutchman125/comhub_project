@@ -10,7 +10,7 @@ export function ApprovalPage({ token, userRole }) {
   const fetchPending = async () => {
     setLoading(true)
     try {
-      const res = await fetch('http://localhost:3000/api/communities/pending/approvals', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/communities/pending/approvals`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       if (res.ok) {
@@ -22,7 +22,7 @@ export function ApprovalPage({ token, userRole }) {
       }
 
       if (userRole === 'DOSEN') {
-        const resAct = await fetch('http://localhost:3000/api/communities/pending/ukm-activities', {
+        const resAct = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/communities/pending/ukm-activities`, {
           headers: { Authorization: `Bearer ${token}` }
         })
         if (resAct.ok) {
@@ -56,7 +56,7 @@ export function ApprovalPage({ token, userRole }) {
     if (!isConfirmed) return
 
     try {
-      const res = await fetch(`http://localhost:3000/api/communities/${id}/approve/dosen`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/communities/${id}/approve/dosen`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
@@ -89,7 +89,7 @@ export function ApprovalPage({ token, userRole }) {
     if (!confirm.isConfirmed) return
 
     try {
-      const res = await fetch(`http://localhost:3000/api/communities/${id}/upgrade/approve`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/communities/${id}/upgrade/approve`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}` }
       })
@@ -120,7 +120,7 @@ export function ApprovalPage({ token, userRole }) {
     if (!isConfirmed || !date) return
 
     try {
-      const res = await fetch(`http://localhost:3000/api/communities/${id}/interview`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/communities/${id}/interview`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
@@ -157,7 +157,7 @@ export function ApprovalPage({ token, userRole }) {
     if (!skNumber) return
 
     try {
-      const res = await fetch(`http://localhost:3000/api/communities/${id}/approve/kemahasiswaan`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/communities/${id}/approve/kemahasiswaan`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
@@ -194,7 +194,7 @@ export function ApprovalPage({ token, userRole }) {
     if (!skNumber) return
 
     try {
-      const res = await fetch(`http://localhost:3000/api/communities/${id}/upgrade/approve/kemahasiswaan`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/communities/${id}/upgrade/approve/kemahasiswaan`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
@@ -228,7 +228,7 @@ export function ApprovalPage({ token, userRole }) {
     if (!confirm.isConfirmed) return
 
     try {
-      const res = await fetch(`http://localhost:3000/api/communities/${id}/upgrade/reject/kemahasiswaan`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/communities/${id}/upgrade/reject/kemahasiswaan`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}` }
       })
@@ -258,7 +258,7 @@ export function ApprovalPage({ token, userRole }) {
     if (!confirm.isConfirmed) return
 
     try {
-      const res = await fetch(`http://localhost:3000/api/communities/${id}/reject`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/communities/${id}/reject`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}` }
       })
@@ -277,7 +277,7 @@ export function ApprovalPage({ token, userRole }) {
   const handleApproveActivity = async (type, id) => {
     try {
       const endpoint = type === 'project' ? `/api/communities/projects/${id}/approve` : `/api/communities/finances/${id}/approve`;
-      const res = await fetch(`http://localhost:3000${endpoint}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}${endpoint}`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}` }
       })
@@ -307,7 +307,7 @@ export function ApprovalPage({ token, userRole }) {
 
     try {
       const endpoint = type === 'project' ? `/api/communities/projects/${id}/reject` : `/api/communities/finances/${id}/reject`;
-      const res = await fetch(`http://localhost:3000${endpoint}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}${endpoint}`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}` }
       })

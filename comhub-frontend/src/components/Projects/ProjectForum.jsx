@@ -31,7 +31,7 @@ export default function ProjectForum({
     e.preventDefault()
     if (!newMessage.trim()) return
     try {
-      const res = await fetch(`http://localhost:3000/api/projects/${selectedProject.id}/discussions`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/projects/${selectedProject.id}/discussions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ message: newMessage, mentions: mentionedUsers })
@@ -54,7 +54,7 @@ export default function ProjectForum({
 
   const handleDeleteMessage = async (msgId) => {
     try {
-      const res = await fetch(`http://localhost:3000/api/projects/${selectedProject.id}/discussions/${msgId}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/projects/${selectedProject.id}/discussions/${msgId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -66,7 +66,7 @@ export default function ProjectForum({
     e.preventDefault();
     if (!editMessageText.trim()) return;
     try {
-      const res = await fetch(`http://localhost:3000/api/projects/${selectedProject.id}/discussions/${msgId}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/projects/${selectedProject.id}/discussions/${msgId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ message: editMessageText })
@@ -108,7 +108,7 @@ export default function ProjectForum({
         .map(d => d.id);
         
       if (unreadIds.length > 0) {
-        fetch(`http://localhost:3000/api/projects/${selectedProject.id}/discussions/read`, {
+        fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/projects/${selectedProject.id}/discussions/read`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify({ messageIds: unreadIds })
@@ -122,7 +122,7 @@ export default function ProjectForum({
   useEffect(() => {
     if (!selectedProject) return
 
-    const socket = io('http://localhost:3000')
+    const socket = io(import.meta.env.VITE_API_URL || 'http://localhost:3000')
     socket.emit('join_project', selectedProject.id)
 
     socket.on('new_message', (msg) => {

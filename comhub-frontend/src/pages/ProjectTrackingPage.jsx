@@ -31,7 +31,7 @@ export function ProjectTrackingPage({ communityId, token, isReadOnly = false, cu
 
   const fetchProjects = async () => {
     try {
-      const res = await fetch(`http://localhost:3000/api/communities/${communityId}/projects`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/communities/${communityId}/projects`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       if (res.ok) setProjects(await res.json())
@@ -42,9 +42,9 @@ export function ProjectTrackingPage({ communityId, token, isReadOnly = false, cu
   const fetchBoard = async (projectId) => {
     try {
       const [boardRes, membersRes, discRes] = await Promise.all([
-        fetch(`http://localhost:3000/api/projects/${projectId}/board`, { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetch(`http://localhost:3000/api/communities/${communityId}/members`, { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetch(`http://localhost:3000/api/projects/${projectId}/discussions`, { headers: { 'Authorization': `Bearer ${token}` } })
+        fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/projects/${projectId}/board`, { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/communities/${communityId}/members`, { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/projects/${projectId}/discussions`, { headers: { 'Authorization': `Bearer ${token}` } })
       ])
       
       let boardData = null;
@@ -63,7 +63,7 @@ export function ProjectTrackingPage({ communityId, token, isReadOnly = false, cu
       if (boardData) {
         const allTasks = [...(boardData.board?.TODO || []), ...(boardData.board?.IN_PROGRESS || []), ...(boardData.board?.DONE || [])]
         const subResults = await Promise.all(
-          allTasks.map(t => fetch(`http://localhost:3000/api/users/tasks/${t.id}/submissions`, { headers: { 'Authorization': `Bearer ${token}` } }).then(r => r.ok ? r.json() : []))
+          allTasks.map(t => fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/users/tasks/${t.id}/submissions`, { headers: { 'Authorization': `Bearer ${token}` } }).then(r => r.ok ? r.json() : []))
         )
         setSubmissions(subResults.flat())
       }
@@ -88,7 +88,7 @@ export function ProjectTrackingPage({ communityId, token, isReadOnly = false, cu
   const handleCreateTask = async (e) => {
     e.preventDefault()
     try {
-      const res = await fetch(`http://localhost:3000/api/projects/${selectedProject.id}/tasks`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/communities/${communityId}/projects/${selectedProject.id}/tasks`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify(taskForm)
@@ -106,7 +106,7 @@ export function ProjectTrackingPage({ communityId, token, isReadOnly = false, cu
 
   const handleReview = async (submissionId, status) => {
     try {
-      const res = await fetch(`http://localhost:3000/api/users/submissions/${submissionId}/review`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/users/submissions/${submissionId}/review`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ status, ketua_note: reviewNote })
@@ -123,7 +123,7 @@ export function ProjectTrackingPage({ communityId, token, isReadOnly = false, cu
 
   const downloadFile = async (submissionId, fileName) => {
     try {
-      const res = await fetch(`http://localhost:3000/api/users/submissions/${submissionId}/download`, { headers: { 'Authorization': `Bearer ${token}` } })
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/users/submissions/${submissionId}/download`, { headers: { 'Authorization': `Bearer ${token}` } })
       const data = await res.json()
       if (!res.ok) throw new Error(data.message)
       const link = document.createElement('a')
@@ -163,12 +163,12 @@ export function ProjectTrackingPage({ communityId, token, isReadOnly = false, cu
     try {
       let res;
       if (editingId) {
-        res = await fetch(`http://localhost:3000/api/projects/${editingId}`, {
+        res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/projects/${editingId}`, {
           method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify(formData)
         })
       } else {
-        res = await fetch(`http://localhost:3000/api/communities/${communityId}/projects`, {
+        res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/communities/${communityId}/projects`, {
           method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify(formData)
         })
@@ -215,7 +215,7 @@ export function ProjectTrackingPage({ communityId, token, isReadOnly = false, cu
 
     if (result.isConfirmed) {
       try {
-        const res = await fetch(`http://localhost:3000/api/projects/${id}`, {
+        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/projects/${id}`, {
           method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` }
         })
         const data = await res.json()
@@ -246,7 +246,7 @@ export function ProjectTrackingPage({ communityId, token, isReadOnly = false, cu
   const handleExport = async () => {
     setExporting(true)
     try {
-      const res = await fetch(`http://localhost:3000/api/communities/${communityId}/report`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/communities/${communityId}/report`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       const data = await res.json()

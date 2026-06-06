@@ -12,7 +12,7 @@ export function MemberPage({ communityId, token, isReadOnly = false, currentUser
 
   const fetchMembers = async () => {
     try {
-      const res = await fetch(`http://localhost:3000/api/communities/${communityId}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/communities/${communityId}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       if (res.ok) {
@@ -21,7 +21,7 @@ export function MemberPage({ communityId, token, isReadOnly = false, currentUser
       }
 
       if (currentUserRole === 'KETUA') {
-        const appRes = await fetch(`http://localhost:3000/api/communities/${communityId}/applicants`, {
+        const appRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/communities/${communityId}/applicants`, {
           headers: { 'Authorization': `Bearer ${token}` }
         })
         if (appRes.ok) {
@@ -57,7 +57,7 @@ export function MemberPage({ communityId, token, isReadOnly = false, currentUser
     }
 
     try {
-      const res = await fetch(`http://localhost:3000/api/communities/${communityId}/members/${userId}/role`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/communities/${communityId}/members/${userId}/role`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ newRole })
@@ -81,7 +81,7 @@ export function MemberPage({ communityId, token, isReadOnly = false, currentUser
 
           if (result.isConfirmed) {
             // Send warning message
-            await fetch('http://localhost:3000/api/messages', {
+            await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/messages`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
               body: JSON.stringify({
@@ -150,7 +150,7 @@ export function MemberPage({ communityId, token, isReadOnly = false, currentUser
 
     if (confirm.isConfirmed) {
       try {
-        const res = await fetch(`http://localhost:3000/api/communities/${communityId}/members/resign`, {
+        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/communities/${communityId}/members/resign`, {
           method: 'PUT',
           headers: { 'Authorization': `Bearer ${token}` }
         })
@@ -188,7 +188,7 @@ export function MemberPage({ communityId, token, isReadOnly = false, currentUser
 
     if (result.isConfirmed) {
       try {
-        const res = await fetch(`http://localhost:3000/api/communities/${communityId}/members/${userId}`, {
+        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/communities/${communityId}/members/${userId}`, {
           method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` }
         })
         const data = await res.json()
@@ -218,7 +218,7 @@ export function MemberPage({ communityId, token, isReadOnly = false, currentUser
 
   const handleApproveApplicant = async (userId) => {
     try {
-      const res = await fetch(`http://localhost:3000/api/communities/${communityId}/applicants/${userId}/approve`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/communities/${communityId}/applicants/${userId}/approve`, {
         method: 'PUT', headers: { 'Authorization': `Bearer ${token}` }
       })
       const data = await res.json()
@@ -257,7 +257,7 @@ export function MemberPage({ communityId, token, isReadOnly = false, currentUser
 
     if (result.isConfirmed) {
       try {
-        const res = await fetch(`http://localhost:3000/api/communities/${communityId}/members/${userId}`, {
+        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/communities/${communityId}/members/${userId}`, {
           method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` }
         })
         const data = await res.json()
@@ -280,7 +280,7 @@ export function MemberPage({ communityId, token, isReadOnly = false, currentUser
   const handleExport = async () => {
     setExporting(true)
     try {
-      const res = await fetch(`http://localhost:3000/api/communities/${communityId}/report`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/communities/${communityId}/report`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       const data = await res.json()
@@ -314,7 +314,7 @@ export function MemberPage({ communityId, token, isReadOnly = false, currentUser
 
   const handleUpdateRating = async (userId, rating) => {
     try {
-      const res = await fetch(`http://localhost:3000/api/communities/${communityId}/members/${userId}/rating`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/communities/${communityId}/members/${userId}/rating`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

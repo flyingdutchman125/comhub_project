@@ -6,7 +6,7 @@ export function InboxPage({ token, currentUser, isOpen, onClose }) {
 
   const fetchMessages = useCallback(async () => {
     try {
-      const res = await fetch('http://localhost:3000/api/messages/inbox', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/messages/inbox`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       if (res.ok) {
@@ -28,7 +28,7 @@ export function InboxPage({ token, currentUser, isOpen, onClose }) {
 
   const markAsRead = async (id) => {
     try {
-      await fetch(`http://localhost:3000/api/messages/${id}/read`, {
+      await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/messages/${id}/read`, {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${token}` }
       })
@@ -41,7 +41,7 @@ export function InboxPage({ token, currentUser, isOpen, onClose }) {
   const handleAccept = async (e, id) => {
     e.stopPropagation();
     try {
-      const res = await fetch(`http://localhost:3000/api/messages/${id}/accept-promotion`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/messages/${id}/accept-promotion`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       })
@@ -61,7 +61,7 @@ export function InboxPage({ token, currentUser, isOpen, onClose }) {
   const handleReject = async (e, id) => {
     e.stopPropagation();
     try {
-      await fetch(`http://localhost:3000/api/messages/${id}/reject-promotion`, {
+      await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/messages/${id}/reject-promotion`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       })
