@@ -24,6 +24,23 @@ promisePool.getConnection()
         connection.release();
 
         try {
+            console.log('Memeriksa dan membuat tabel users...');
+            await promisePool.query(`
+                CREATE TABLE IF NOT EXISTS users (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    nama VARCHAR(255) NOT NULL,
+                    email VARCHAR(255) NOT NULL UNIQUE,
+                    password VARCHAR(255) NOT NULL,
+                    global_role ENUM('MAHASISWA', 'DOSEN_PEMBINA', 'KEMAHASISWAAN', 'ADMIN') DEFAULT 'MAHASISWA',
+                    prodi VARCHAR(100) DEFAULT NULL,
+                    bio TEXT DEFAULT NULL,
+                    skills TEXT DEFAULT NULL,
+                    foto_profile LONGTEXT DEFAULT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            `);
+            console.log('Inisialisasi tabel users selesai.');
+
             console.log('Memeriksa struktur tabel communities...');
             const [keys] = await promisePool.query("SHOW KEYS FROM communities WHERE Key_name = 'PRIMARY'");
             if (keys.length === 0) {
