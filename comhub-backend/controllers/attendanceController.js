@@ -58,7 +58,7 @@ const createSession = async (req, res) => {
         // 1. Simpan sesi baru
         const [sessionResult] = await connection.query(
             'INSERT INTO attendance_sessions (community_id, title, description, session_date) VALUES (?, ?, ?, ?)',
-            [communityId, title, description || null, session_date]
+            [communityId, title, description || null, session_date || null]
         );
         const sessionId = sessionResult.insertId;
 
@@ -179,7 +179,7 @@ const updateSession = async (req, res) => {
 
         await db.query(
             'UPDATE attendance_sessions SET title = ?, description = ?, session_date = ? WHERE id = ?',
-            [title, description || null, session_date, sessionId]
+            [title, description || null, session_date || null, sessionId]
         );
 
         res.status(200).json({ message: 'Sesi absensi berhasil diperbarui!' });

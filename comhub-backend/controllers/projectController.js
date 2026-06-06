@@ -24,7 +24,7 @@ const createProject = async (req, res) => {
 
         const [result] = await db.query(
             'INSERT INTO projects (community_id, nama_proker, deskripsi, anggaran, start_date, end_date, approval_status) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            [communityId, nama_proyek, deskripsi, anggaran || '0', start_date, end_date, initialStatus]
+            [communityId, nama_proyek, deskripsi || null, anggaran || '0', start_date || null, end_date || null, initialStatus]
         );
         res.status(201).json({ 
             message: initialStatus === 'PENDING' ? 'Proyek diajukan dan menunggu persetujuan Dosen!' : 'Proyek berhasil dibuat!', 
@@ -104,7 +104,7 @@ const updateProject = async (req, res) => {
         // 3. Update proyek
         await db.query(
             'UPDATE projects SET nama_proker = ?, deskripsi = ?, anggaran = ?, progress = ?, start_date = ?, end_date = ? WHERE id = ?',
-            [nama_proyek, deskripsi, anggaran || '0', progress || 0, start_date, end_date, projectId]
+            [nama_proyek, deskripsi || null, anggaran || '0', progress || 0, start_date || null, end_date || null, projectId]
         );
 
         res.status(200).json({ message: 'Proyek berhasil diperbarui!' });

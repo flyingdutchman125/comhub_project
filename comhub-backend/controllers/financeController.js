@@ -30,7 +30,7 @@ const createFinance = async (req, res) => {
         // 4. Simpan transaksi
         const [result] = await db.query(
             'INSERT INTO finances (community_id, type, amount, description, transaction_date, approval_status) VALUES (?, ?, ?, ?, ?, ?)',
-            [communityId, type, amount, description, transaction_date || new Date(), initialStatus]
+            [communityId, type, amount || 0, description || null, transaction_date || null, initialStatus]
         );
 
         res.status(201).json({
@@ -72,7 +72,7 @@ const updateFinance = async (req, res) => {
         // 3. Update transaksi
         await db.query(
             'UPDATE finances SET type = ?, amount = ?, description = ?, transaction_date = ? WHERE id = ?',
-            [type, amount, description, transaction_date, financeId]
+            [type, amount || 0, description || null, transaction_date || null, financeId]
         );
 
         res.status(200).json({ message: 'Transaksi berhasil diperbarui!' });

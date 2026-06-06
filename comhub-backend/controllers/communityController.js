@@ -17,7 +17,7 @@ const createCommunity = async (req, res) => {
         // 1. Simpan data komunitas baru ke tabel `communities`
         const [commResult] = await connection.query(
             'INSERT INTO communities (nama_komunitas, deskripsi, logo, status, approval_status) VALUES (?, ?, ?, ?, ?)',
-            [nama_komunitas, deskripsi, logo, 'KOMUNITAS', 'MENUNGGU_KEMAHASISWAAN']
+            [nama_komunitas, deskripsi || null, logo || null, 'KOMUNITAS', 'MENUNGGU_KEMAHASISWAAN']
         );
         const communityId = commResult.insertId;
 
@@ -430,7 +430,7 @@ const updateCommunity = async (req, res) => {
         // 2. Lakukan update
         const [result] = await db.query(
             'UPDATE communities SET nama_komunitas = ?, deskripsi = ?, logo = ? WHERE id = ?',
-            [nama_komunitas, deskripsi, logo, communityId]
+            [nama_komunitas, deskripsi || null, logo || null, communityId]
         );
 
         if (result.affectedRows === 0) {
