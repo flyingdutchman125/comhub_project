@@ -1,0 +1,12 @@
+{
+  "install": "cd comhub-backend && npm install",
+  "start": "cd comhub-backend && node server.js",
+  "watch": {
+    "ignore": [
+      "\\.env",
+      "node_modules",
+      "comhub-frontend",
+      "\\.git"
+    ]
+  }
+}
