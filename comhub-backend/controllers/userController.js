@@ -250,8 +250,8 @@ const getTaskSubmissions = async (req, res) => {
             'SELECT community_role FROM community_members WHERE user_id = ? AND community_id = ? AND status_keanggotaan = \'AKTIF\'',
             [userId, tasks[0].community_id]
         );
-        if (roleCheck.length === 0 || !['KETUA', 'SEKRETARIS'].includes(roleCheck[0].community_role)) {
-            return res.status(403).json({ message: 'Akses ditolak.' });
+        if (roleCheck.length === 0) {
+            return res.status(403).json({ message: 'Akses ditolak. Anda bukan anggota aktif komunitas ini.' });
         }
 
         const [submissions] = await db.query(`
