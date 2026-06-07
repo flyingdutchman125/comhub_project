@@ -8,7 +8,7 @@ export function SettingsPage({ user, token, selectedCommunity, userRoleInSelecte
   const [activeTab, setActiveTab] = useState('Profil Saya');
   
   const tabs = ['Profil Saya', 'Keamanan Akun'];
-  if (selectedCommunity && ['KETUA', 'SEKRETARIS'].includes(userRoleInSelected)) {
+  if (selectedCommunity && userRoleInSelected === 'KETUA') {
     tabs.push('Pengaturan Komunitas');
   }
   if (user?.role === 'KEMAHASISWAAN') {
