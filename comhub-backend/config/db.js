@@ -251,26 +251,55 @@ promisePool.getConnection()
             `);
             console.log('Inisialisasi tabel notifications selesai.');
 
-            console.log('Memeriksa dan membuat tabel tasks...');
+            console.log('Memeriksa struktur tabel tasks...');
+            const [taskCols] = await promisePool.query("SHOW COLUMNS FROM tasks LIKE 'project_id'");
+            
+            if (taskCols.length === 0) {
+                console.log('Tabel tasks versi lama terdeteksi (TIDAK ADA project_id). Menghapus dan membuat ulang...');
+                // Hapus tabel turunan jika ada
+                await promisePool.query('DROP TABLE IF EXISTS task_submissions');
+                await promisePool.query('DROP TABLE IF EXISTS task_assignments');
+                await promisePool.query('DROP TABLE IF EXISTS tasks');
+                
+                await promisePool.query(`
+                    CREATE TABLE tasks (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        project_id INT NOT NULL,
+                        judul_tugas VARCHAR(255) NOT NULL,
+                        deskripsi TEXT,
+                        assigned_to INT DEFAULT NULL,
+                        status ENUM('TODO', 'IN_PROGRESS', 'DONE') DEFAULT 'TODO',
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+                        FOREIGN KEY (assigned_to) REFERENCES users(id) ON DELETE SET NULL,
+                        INDEX idx_project (project_id),
+                        INDEX idx_status (status)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+                `);
+                console.log('Tabel tasks berhasil diperbarui ke struktur Kanban.');
+            } else {
+                console.log('Struktur tabel tasks sudah benar.');
+            }
+
+            console.log('Memeriksa dan membuat tabel task_submissions...');
             await promisePool.query(`
-                CREATE TABLE IF NOT EXISTS tasks (
+                CREATE TABLE IF NOT EXISTS task_submissions (
                     id INT AUTO_INCREMENT PRIMARY KEY,
-                    community_id INT NOT NULL,
-                    assigned_by INT NOT NULL,
-                    title VARCHAR(255) NOT NULL,
-                    description TEXT,
-                    priority ENUM('LOW', 'MEDIUM', 'HIGH') DEFAULT 'MEDIUM',
-                    status ENUM('PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED') DEFAULT 'PENDING',
-                    due_date DATE DEFAULT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                    FOREIGN KEY (community_id) REFERENCES communities(id) ON DELETE CASCADE,
-                    FOREIGN KEY (assigned_by) REFERENCES users(id) ON DELETE CASCADE,
-                    INDEX idx_community (community_id),
-                    INDEX idx_status (status)
+                    task_id INT NOT NULL,
+                    user_id INT NOT NULL,
+                    file_name VARCHAR(255) NOT NULL,
+                    file_data LONGTEXT,
+                    file_type VARCHAR(50),
+                    notes TEXT,
+                    status ENUM('PENDING', 'APPROVED', 'REJECTED') DEFAULT 'PENDING',
+                    submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                    INDEX idx_task (task_id)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
             `);
-            console.log('Inisialisasi tabel tasks selesai.');
+            console.log('Inisialisasi tabel task_submissions selesai.');
 
             console.log('Memeriksa kolom approval_status di tabel projects...');
             const [projCols] = await promisePool.query("SHOW COLUMNS FROM projects LIKE 'approval_status'");
