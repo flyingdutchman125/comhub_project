@@ -80,8 +80,8 @@ export default function CropModal({ imageSrc, aspect = 16 / 9, onCancel, onCropD
           />
 
           <div className="ml-auto flex gap-2">
-            <button onClick={onCancel} className="rounded-lg border px-4 py-2">Batal</button>
-            <button onClick={handleDone} className="rounded-lg bg-cyan-500 px-4 py-2 text-white">Selesai</button>
+            <button type="button" onClick={onCancel} className="rounded-lg border px-4 py-2">Batal</button>
+            <button type="button" onClick={handleDone} className="rounded-lg bg-cyan-500 px-4 py-2 text-white">Selesai</button>
           </div>
         </div>
       </div>
