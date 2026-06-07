@@ -88,7 +88,8 @@ export function ProjectTrackingPage({ communityId, token, isReadOnly = false, cu
   const handleCreateTask = async (e) => {
     e.preventDefault()
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/communities/${communityId}/projects/${selectedProject.id}/tasks`, {
+      const apiUrl = (import.meta.env.VITE_API_URL || 'http://localhost:3000').replace(/\/$/, '');
+      const res = await fetch(`${apiUrl}/api/projects/${selectedProject.id}/tasks`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify(taskForm)
