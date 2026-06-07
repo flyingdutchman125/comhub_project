@@ -122,7 +122,11 @@ export default function ProjectForum({
   useEffect(() => {
     if (!selectedProject) return
 
-    const socket = io(import.meta.env.VITE_API_URL || 'http://localhost:3000')
+    const apiUrl = (import.meta.env.VITE_API_URL || 'http://localhost:3000').replace(/\/$/, '');
+    const socket = io(apiUrl, {
+      transports: ['polling', 'websocket'],
+      reconnection: true
+    })
     socket.emit('join_project', selectedProject.id)
 
     socket.on('new_message', (msg) => {
