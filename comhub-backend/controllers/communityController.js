@@ -302,7 +302,7 @@ const generateReport = async (req, res) => {
     try {
         // 1. Otorisasi: Hanya Ketua
         const [checkRole] = await db.query(
-            'SELECT community_role FROM community_members WHERE user_id = ? AND community_id = ? AND status_keanggotaan = "AKTIF"',
+            'SELECT community_role FROM community_members WHERE user_id = ? AND community_id = ? AND status_keanggotaan = \'AKTIF\'',
             [userId, communityId]
         );
 
@@ -384,7 +384,7 @@ const updateMemberRating = async (req, res) => {
     try {
         // 2. Otorisasi: Pastikan peminta adalah KETUA di komunitas tersebut
         const [checkRole] = await db.query(
-            'SELECT community_role FROM community_members WHERE user_id = ? AND community_id = ? AND status_keanggotaan = "AKTIF"',
+            'SELECT community_role FROM community_members WHERE user_id = ? AND community_id = ? AND status_keanggotaan = \'AKTIF\'',
             [requesterId, communityId]
         );
 
@@ -394,7 +394,7 @@ const updateMemberRating = async (req, res) => {
 
         // 3. Update rating anggota
         const [result] = await db.query(
-            'UPDATE community_members SET rating = ? WHERE user_id = ? AND community_id = ? AND status_keanggotaan = "AKTIF"',
+            'UPDATE community_members SET rating = ? WHERE user_id = ? AND community_id = ? AND status_keanggotaan = \'AKTIF\'',
             [ratingVal, targetUserId, communityId]
         );
 
@@ -419,7 +419,7 @@ const updateCommunity = async (req, res) => {
     try {
         // 1. Otorisasi: Pastikan user adalah KETUA atau SEKRETARIS di komunitas tersebut
         const [checkRole] = await db.query(
-            'SELECT community_role FROM community_members WHERE user_id = ? AND community_id = ? AND status_keanggotaan = "AKTIF"',
+            'SELECT community_role FROM community_members WHERE user_id = ? AND community_id = ? AND status_keanggotaan = \'AKTIF\'',
             [userId, communityId]
         );
 
@@ -459,7 +459,7 @@ const addOrUpdateReview = async (req, res) => {
     try {
         // Cek apakah user adalah anggota AKTIF
         const [membership] = await db.query(
-            'SELECT * FROM community_members WHERE user_id = ? AND community_id = ? AND status_keanggotaan = "AKTIF"',
+            'SELECT * FROM community_members WHERE user_id = ? AND community_id = ? AND status_keanggotaan = \'AKTIF\'',
             [userId, communityId]
         );
 

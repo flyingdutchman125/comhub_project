@@ -4,7 +4,7 @@ const db = require('../config/db');
 const checkManagePermission = async (userId, communityId) => {
     try {
         const [checkRole] = await db.query(
-            'SELECT community_role FROM community_members WHERE user_id = ? AND community_id = ? AND status_keanggotaan = "AKTIF"',
+            'SELECT community_role FROM community_members WHERE user_id = ? AND community_id = ? AND status_keanggotaan = \'AKTIF\'',
             [userId, communityId]
         );
 
@@ -25,7 +25,7 @@ const checkManagePermission = async (userId, communityId) => {
 const checkMemberPermission = async (userId, communityId) => {
     try {
         const [checkRole] = await db.query(
-            'SELECT status_keanggotaan FROM community_members WHERE user_id = ? AND community_id = ? AND status_keanggotaan = "AKTIF"',
+            'SELECT status_keanggotaan FROM community_members WHERE user_id = ? AND community_id = ? AND status_keanggotaan = \'AKTIF\'',
             [userId, communityId]
         );
         return checkRole.length > 0;
@@ -64,7 +64,7 @@ const createSession = async (req, res) => {
 
         // 2. Ambil semua anggota aktif saat ini
         const [activeMembers] = await connection.query(
-            'SELECT user_id FROM community_members WHERE community_id = ? AND status_keanggotaan = "AKTIF"',
+            'SELECT user_id FROM community_members WHERE community_id = ? AND status_keanggotaan = \'AKTIF\'',
             [communityId]
         );
 

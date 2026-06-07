@@ -14,6 +14,11 @@ const pool = mysql.createPool({
     ssl: { rejectUnauthorized: false } // Required for Aiven MySQL
 });
 
+// Nonaktifkan ANSI_QUOTES agar tanda kutip ganda ("") di query tidak dianggap sebagai nama kolom
+pool.on('connection', (connection) => {
+    connection.query("SET SESSION sql_mode=(SELECT REPLACE(@@sql_mode,'ANSI_QUOTES',''))");
+});
+
 // Ubah pool menjadi promise-based agar bisa pakai async/await
 const promisePool = pool.promise();
 

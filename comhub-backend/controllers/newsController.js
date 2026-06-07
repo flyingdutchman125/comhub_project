@@ -38,7 +38,7 @@ const createNews = async (req, res) => {
         if (community_id) {
             // Check if user is KETUA or KADIV in this community
             const [member] = await db.query(
-                'SELECT community_role FROM community_members WHERE user_id = ? AND community_id = ? AND status_keanggotaan = "AKTIF"',
+                'SELECT community_role FROM community_members WHERE user_id = ? AND community_id = ? AND status_keanggotaan = \'AKTIF\'',
                 [author_id, community_id]
             );
             if (member.length === 0 || !['KETUA', 'KADIV'].includes(member[0].community_role)) {
@@ -88,7 +88,7 @@ const updateNews = async (req, res) => {
         if (post.community_id) {
             // Check if user is KETUA or KADIV in this community
             const [member] = await db.query(
-                'SELECT community_role FROM community_members WHERE user_id = ? AND community_id = ? AND status_keanggotaan = "AKTIF"',
+                'SELECT community_role FROM community_members WHERE user_id = ? AND community_id = ? AND status_keanggotaan = \'AKTIF\'',
                 [userId, post.community_id]
             );
             if (member.length === 0 || !['KETUA', 'KADIV'].includes(member[0].community_role)) {
@@ -130,7 +130,7 @@ const deleteNews = async (req, res) => {
         if (post.community_id) {
             // Check if user is KETUA or KADIV in this community
             const [member] = await db.query(
-                'SELECT community_role FROM community_members WHERE user_id = ? AND community_id = ? AND status_keanggotaan = "AKTIF"',
+                'SELECT community_role FROM community_members WHERE user_id = ? AND community_id = ? AND status_keanggotaan = \'AKTIF\'',
                 [userId, post.community_id]
             );
             if (member.length === 0 || !['KETUA', 'KADIV'].includes(member[0].community_role)) {

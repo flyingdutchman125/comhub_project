@@ -31,7 +31,7 @@ const joinCommunity = async (req, res) => {
 
         // 2.5 Cek apakah user adalah pengurus inti di komunitas manapun
         const [coreRoleCheck] = await db.query(
-            'SELECT * FROM community_members WHERE user_id = ? AND community_role IN ("KETUA", "SEKRETARIS", "BENDAHARA") AND status_keanggotaan = "AKTIF"',
+            'SELECT * FROM community_members WHERE user_id = ? AND community_role IN (\'KETUA\', \'SEKRETARIS\', \'BENDAHARA\') AND status_keanggotaan = \'AKTIF\'',
             [userId]
         );
         
@@ -65,7 +65,7 @@ const getApplicants = async (req, res) => {
     try {
         // 1. Otorisasi: Pastikan yang mengakses ini adalah Ketua/Pengurus di komunitas tersebut
         const [checkRole] = await db.query(
-            'SELECT community_role FROM community_members WHERE user_id = ? AND community_id = ? AND status_keanggotaan = "AKTIF"',
+            'SELECT community_role FROM community_members WHERE user_id = ? AND community_id = ? AND status_keanggotaan = \'AKTIF\'',
             [userId, communityId]
         );
 
@@ -98,7 +98,7 @@ const approveApplicant = async (req, res) => {
     try {
         // 1. Otorisasi (sama seperti di atas)
         const [checkRole] = await db.query(
-            'SELECT community_role FROM community_members WHERE user_id = ? AND community_id = ? AND status_keanggotaan = "AKTIF"',
+            'SELECT community_role FROM community_members WHERE user_id = ? AND community_id = ? AND status_keanggotaan = \'AKTIF\'',
             [userId, communityId]
         );
 
@@ -108,7 +108,7 @@ const approveApplicant = async (req, res) => {
 
         // 2. Ubah status pendaftar menjadi AKTIF
         const [result] = await db.query(
-            'UPDATE community_members SET status_keanggotaan = "AKTIF" WHERE user_id = ? AND community_id = ? AND status_keanggotaan = "MENUNGGU_SELEKSI"',
+            'UPDATE community_members SET status_keanggotaan = \'AKTIF\' WHERE user_id = ? AND community_id = ? AND status_keanggotaan = \'MENUNGGU_SELEKSI\'',
             [applicantId, communityId]
         );
 
@@ -137,7 +137,7 @@ const assignRole = async (req, res) => {
         
         // 1. Otorisasi: Pastikan yang melakukan ini HANYA Ketua
         const [checkRole] = await db.query(
-            'SELECT community_role FROM community_members WHERE user_id = ? AND community_id = ? AND status_keanggotaan = "AKTIF"',
+            'SELECT community_role FROM community_members WHERE user_id = ? AND community_id = ? AND status_keanggotaan = \'AKTIF\'',
             [currentUserId, communityId]
         );
 
@@ -158,7 +158,7 @@ const assignRole = async (req, res) => {
         // 2.5 Validasi tambahan: Jika akan diangkat menjadi pengurus inti, pastikan hanya di 1 komunitas
         if (['SEKRETARIS', 'BENDAHARA', 'KETUA'].includes(newRole)) {
             const [userCommunities] = await db.query(
-                'SELECT community_id FROM community_members WHERE user_id = ? AND status_keanggotaan = "AKTIF"',
+                'SELECT community_id FROM community_members WHERE user_id = ? AND status_keanggotaan = \'AKTIF\'',
                 [targetUserId]
             );
             fs.appendFileSync('debug.log', `[assignRole] userCommunities count: ${userCommunities.length}\n`);
@@ -179,14 +179,14 @@ const assignRole = async (req, res) => {
             
             // Turunkan jabatan ketua lama menjadi ANGGOTA
             const [updateResult1] = await db.query(
-                'UPDATE community_members SET community_role = "ANGGOTA" WHERE user_id = ? AND community_id = ?',
+                'UPDATE community_members SET community_role = \'ANGGOTA\' WHERE user_id = ? AND community_id = ?',
                 [currentUserId, communityId]
             );
             fs.appendFileSync('debug.log', `[assignRole] Demote KETUA result: ${JSON.stringify(updateResult1)}\n`);
         }
 
         const [result] = await db.query(
-            'UPDATE community_members SET community_role = ? WHERE user_id = ? AND community_id = ? AND status_keanggotaan = "AKTIF"',
+            'UPDATE community_members SET community_role = ? WHERE user_id = ? AND community_id = ? AND status_keanggotaan = \'AKTIF\'',
             [newRole, targetUserId, communityId]
         );
         fs.appendFileSync('debug.log', `[assignRole] Promote newRole result: ${JSON.stringify(result)}\n`);
@@ -220,7 +220,7 @@ const removeMember = async (req, res) => {
     try {
         // 1. Otorisasi: Hanya Ketua yang bisa menghapus anggota
         const [checkRole] = await db.query(
-            'SELECT community_role FROM community_members WHERE user_id = ? AND community_id = ? AND status_keanggotaan = "AKTIF"',
+            'SELECT community_role FROM community_members WHERE user_id = ? AND community_id = ? AND status_keanggotaan = \'AKTIF\'',
             [currentUserId, communityId]
         );
 
@@ -277,7 +277,7 @@ const resignFromKetua = async (req, res) => {
     try {
         // 1. Pastikan yang melakukan ini HANYA Ketua
         const [checkRole] = await db.query(
-            'SELECT community_role FROM community_members WHERE user_id = ? AND community_id = ? AND status_keanggotaan = "AKTIF"',
+            'SELECT community_role FROM community_members WHERE user_id = ? AND community_id = ? AND status_keanggotaan = \'AKTIF\'',
             [currentUserId, communityId]
         );
 
@@ -287,7 +287,7 @@ const resignFromKetua = async (req, res) => {
 
         // 2. Turunkan jabatan menjadi ANGGOTA
         const [result] = await db.query(
-            'UPDATE community_members SET community_role = "ANGGOTA" WHERE user_id = ? AND community_id = ?',
+            'UPDATE community_members SET community_role = \'ANGGOTA\' WHERE user_id = ? AND community_id = ?',
             [currentUserId, communityId]
         );
 

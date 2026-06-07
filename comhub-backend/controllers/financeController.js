@@ -9,7 +9,7 @@ const createFinance = async (req, res) => {
     try {
         // 1. Otorisasi: Pastikan user adalah pengurus (KETUA/SEKRETARIS/BENDAHARA)
         const [checkRole] = await db.query(
-            'SELECT community_role FROM community_members WHERE user_id = ? AND community_id = ? AND status_keanggotaan = "AKTIF"',
+            'SELECT community_role FROM community_members WHERE user_id = ? AND community_id = ? AND status_keanggotaan = \'AKTIF\'',
             [userId, communityId]
         );
 
@@ -61,7 +61,7 @@ const updateFinance = async (req, res) => {
 
         // 2. Otorisasi
         const [checkRole] = await db.query(
-            'SELECT community_role FROM community_members WHERE user_id = ? AND community_id = ? AND status_keanggotaan = "AKTIF"',
+            'SELECT community_role FROM community_members WHERE user_id = ? AND community_id = ? AND status_keanggotaan = \'AKTIF\'',
             [userId, communityId]
         );
 
@@ -99,7 +99,7 @@ const deleteFinance = async (req, res) => {
 
         // 2. Otorisasi
         const [checkRole] = await db.query(
-            'SELECT community_role FROM community_members WHERE user_id = ? AND community_id = ? AND status_keanggotaan = "AKTIF"',
+            'SELECT community_role FROM community_members WHERE user_id = ? AND community_id = ? AND status_keanggotaan = \'AKTIF\'',
             [userId, communityId]
         );
 

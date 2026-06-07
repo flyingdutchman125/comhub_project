@@ -193,7 +193,7 @@ const submitTask = async (req, res) => {
         if (existing.length > 0) {
             // Update submission yang ada
             await db.query(
-                'UPDATE task_submissions SET file_name = ?, file_data = ?, file_type = ?, notes = ?, status = "PENDING", submitted_at = NOW() WHERE id = ?',
+                'UPDATE task_submissions SET file_name = ?, file_data = ?, file_type = ?, notes = ?, status = \'PENDING\', submitted_at = NOW() WHERE id = ?',
                 [file_name, file_data, file_type, notes, existing[0].id]
             );
         } else {
@@ -204,7 +204,7 @@ const submitTask = async (req, res) => {
         }
 
         // Update status task ke IN_PROGRESS jika masih TODO
-        await db.query('UPDATE tasks SET status = "IN_PROGRESS" WHERE id = ? AND status = "TODO"', [taskId]);
+        await db.query('UPDATE tasks SET status = \'IN_PROGRESS\' WHERE id = ? AND status = \'TODO\'', [taskId]);
 
         // Kirim notifikasi ke Ketua via pesan
         const [projects] = await db.query(`
@@ -247,7 +247,7 @@ const getTaskSubmissions = async (req, res) => {
         if (tasks.length === 0) return res.status(404).json({ message: 'Tugas tidak ditemukan.' });
 
         const [roleCheck] = await db.query(
-            'SELECT community_role FROM community_members WHERE user_id = ? AND community_id = ? AND status_keanggotaan = "AKTIF"',
+            'SELECT community_role FROM community_members WHERE user_id = ? AND community_id = ? AND status_keanggotaan = \'AKTIF\'',
             [userId, tasks[0].community_id]
         );
         if (roleCheck.length === 0 || !['KETUA', 'SEKRETARIS'].includes(roleCheck[0].community_role)) {
@@ -291,7 +291,7 @@ const downloadSubmission = async (req, res) => {
         // Izinkan: pemilik submission ATAU ketua/sekretaris
         if (sub.user_id !== userId) {
             const [roleCheck] = await db.query(
-                'SELECT community_role FROM community_members WHERE user_id = ? AND community_id = ? AND status_keanggotaan = "AKTIF"',
+                'SELECT community_role FROM community_members WHERE user_id = ? AND community_id = ? AND status_keanggotaan = \'AKTIF\'',
                 [userId, sub.community_id]
             );
             if (roleCheck.length === 0 || !['KETUA', 'SEKRETARIS'].includes(roleCheck[0].community_role)) {
@@ -330,7 +330,7 @@ const reviewSubmission = async (req, res) => {
 
         // Otorisasi: Ketua atau Sekretaris
         const [roleCheck] = await db.query(
-            'SELECT community_role FROM community_members WHERE user_id = ? AND community_id = ? AND status_keanggotaan = "AKTIF"',
+            'SELECT community_role FROM community_members WHERE user_id = ? AND community_id = ? AND status_keanggotaan = \'AKTIF\'',
             [userId, sub.community_id]
         );
         if (roleCheck.length === 0 || !['KETUA', 'SEKRETARIS'].includes(roleCheck[0].community_role)) {
@@ -345,7 +345,7 @@ const reviewSubmission = async (req, res) => {
 
         // Jika APPROVED, update task status ke DONE
         if (status === 'APPROVED') {
-            await db.query('UPDATE tasks SET status = "DONE" WHERE id = ?', [sub.task_id]);
+            await db.query('UPDATE tasks SET status = \'DONE\' WHERE id = ?', [sub.task_id]);
         }
 
         // Kirim notifikasi ke anggota

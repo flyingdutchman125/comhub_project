@@ -50,7 +50,7 @@ const approveByDosen = async (req, res) => {
 
     try {
         const [result] = await db.query(
-            'UPDATE communities SET approval_status = "MENUNGGU_KEMAHASISWAAN", eligibility_notes = ?, dosen_pembina_id = ? WHERE id = ? AND approval_status = "MENUNGGU_DOSEN"',
+            'UPDATE communities SET approval_status = \'MENUNGGU_KEMAHASISWAAN\', eligibility_notes = ?, dosen_pembina_id = ? WHERE id = ? AND approval_status = \'MENUNGGU_DOSEN\'',
             [eligibility_notes || null, dosenId, communityId]
         );
 
@@ -77,7 +77,7 @@ const setInterviewDate = async (req, res) => {
 
     try {
         const [result] = await db.query(
-            'UPDATE communities SET interview_date = ? WHERE id = ? AND approval_status = "MENUNGGU_DOSEN"',
+            'UPDATE communities SET interview_date = ? WHERE id = ? AND approval_status = \'MENUNGGU_DOSEN\'',
             [interview_date, communityId]
         );
 
@@ -104,7 +104,7 @@ const approveByKemahasiswaan = async (req, res) => {
 
     try {
         const [result] = await db.query(
-            'UPDATE communities SET approval_status = "DISETUJUI", sk_number = ? WHERE id = ? AND approval_status = "MENUNGGU_KEMAHASISWAAN"',
+            'UPDATE communities SET approval_status = \'DISETUJUI\', sk_number = ? WHERE id = ? AND approval_status = \'MENUNGGU_KEMAHASISWAAN\'',
             [sk_number || null, communityId]
         );
 
@@ -133,7 +133,7 @@ const rejectCommunity = async (req, res) => {
 
     try {
         const [result] = await db.query(
-            'UPDATE communities SET approval_status = "DITOLAK" WHERE id = ? AND approval_status = ?',
+            'UPDATE communities SET approval_status = \'DITOLAK\' WHERE id = ? AND approval_status = ?',
             [communityId, allowedStatus]
         );
 
@@ -228,7 +228,7 @@ const applyForUKMUpgrade = async (req, res) => {
         }
 
         // Jika semua lolos, update status ke MENUNGGU_DOSEN untuk upgrade
-        await db.query('UPDATE communities SET upgrade_status = "MENUNGGU_DOSEN" WHERE id = ?', [communityId]);
+        await db.query('UPDATE communities SET upgrade_status = \'MENUNGGU_DOSEN\' WHERE id = ?', [communityId]);
         
         res.status(200).json({ message: 'Pengajuan UKM berhasil dikirim dan menunggu persetujuan Dosen!' });
     } catch (error) {
@@ -247,7 +247,7 @@ const approveUpgradeDosen = async (req, res) => {
 
     try {
         const [result] = await db.query(
-            'UPDATE communities SET upgrade_status = "MENUNGGU_KEMAHASISWAAN", dosen_pembina_id = ? WHERE id = ? AND upgrade_status = "MENUNGGU_DOSEN"',
+            'UPDATE communities SET upgrade_status = \'MENUNGGU_KEMAHASISWAAN\', dosen_pembina_id = ? WHERE id = ? AND upgrade_status = \'MENUNGGU_DOSEN\'',
             [dosenId, communityId]
         );
 
@@ -273,7 +273,7 @@ const approveUpgradeKemahasiswaan = async (req, res) => {
 
     try {
         const [result] = await db.query(
-            'UPDATE communities SET status = "UKM", upgrade_status = "TIDAK_ADA", sk_number = ? WHERE id = ? AND upgrade_status = "MENUNGGU_KEMAHASISWAAN"',
+            'UPDATE communities SET status = \'UKM\', upgrade_status = \'TIDAK_ADA\', sk_number = ? WHERE id = ? AND upgrade_status = \'MENUNGGU_KEMAHASISWAAN\'',
             [sk_number, communityId]
         );
 
@@ -297,7 +297,7 @@ const rejectUpgradeKemahasiswaan = async (req, res) => {
 
     try {
         const [result] = await db.query(
-            'UPDATE communities SET upgrade_status = "DITOLAK" WHERE id = ? AND upgrade_status = "MENUNGGU_KEMAHASISWAAN"',
+            'UPDATE communities SET upgrade_status = \'DITOLAK\' WHERE id = ? AND upgrade_status = \'MENUNGGU_KEMAHASISWAAN\'',
             [communityId]
         );
 
@@ -365,7 +365,7 @@ const approveProject = async (req, res) => {
             return res.status(403).json({ message: 'Akses ditolak! Anda bukan pembina UKM ini.' });
         }
 
-        await db.query('UPDATE projects SET approval_status = "APPROVED" WHERE id = ? AND approval_status = "PENDING"', [projectId]);
+        await db.query('UPDATE projects SET approval_status = \'APPROVED\' WHERE id = ? AND approval_status = \'PENDING\'', [projectId]);
         res.status(200).json({ message: 'Proyek UKM disetujui!' });
     } catch (error) {
         console.error(error);
@@ -386,7 +386,7 @@ const rejectProject = async (req, res) => {
             return res.status(403).json({ message: 'Akses ditolak! Anda bukan pembina UKM ini.' });
         }
 
-        await db.query('UPDATE projects SET approval_status = "REJECTED" WHERE id = ? AND approval_status = "PENDING"', [projectId]);
+        await db.query('UPDATE projects SET approval_status = \'REJECTED\' WHERE id = ? AND approval_status = \'PENDING\'', [projectId]);
         res.status(200).json({ message: 'Proyek UKM ditolak.' });
     } catch (error) {
         console.error(error);
@@ -407,7 +407,7 @@ const approveFinance = async (req, res) => {
             return res.status(403).json({ message: 'Akses ditolak! Anda bukan pembina UKM ini.' });
         }
 
-        await db.query('UPDATE finances SET approval_status = "APPROVED" WHERE id = ? AND approval_status = "PENDING"', [financeId]);
+        await db.query('UPDATE finances SET approval_status = \'APPROVED\' WHERE id = ? AND approval_status = \'PENDING\'', [financeId]);
         res.status(200).json({ message: 'Pengajuan Dana disetujui!' });
     } catch (error) {
         console.error(error);
@@ -428,7 +428,7 @@ const rejectFinance = async (req, res) => {
             return res.status(403).json({ message: 'Akses ditolak! Anda bukan pembina UKM ini.' });
         }
 
-        await db.query('UPDATE finances SET approval_status = "REJECTED" WHERE id = ? AND approval_status = "PENDING"', [financeId]);
+        await db.query('UPDATE finances SET approval_status = \'REJECTED\' WHERE id = ? AND approval_status = \'PENDING\'', [financeId]);
         res.status(200).json({ message: 'Pengajuan Dana ditolak.' });
     } catch (error) {
         console.error(error);

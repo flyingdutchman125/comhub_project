@@ -72,7 +72,7 @@ const acceptPromotionOffer = async (req, res) => {
     
     try {
         // 1. Validasi pesan
-        const [messages] = await db.query('SELECT * FROM messages WHERE id = ? AND receiver_id = ? AND type = "PROMOTION_OFFER" AND is_actioned = FALSE', [messageId, userId]);
+        const [messages] = await db.query('SELECT * FROM messages WHERE id = ? AND receiver_id = ? AND type = \'PROMOTION_OFFER\' AND is_actioned = FALSE', [messageId, userId]);
         if (messages.length === 0) return res.status(404).json({ message: 'Pesan penawaran tidak valid atau sudah diproses' });
         
         const offer = messages[0];
@@ -87,11 +87,11 @@ const acceptPromotionOffer = async (req, res) => {
         
         // 3. Untuk setiap komunitas lain, kirim pesan pengunduran diri ke Ketuanya, lalu keluar
         for (let comm of otherCommunities) {
-            const [ketuas] = await db.query('SELECT user_id FROM community_members WHERE community_id = ? AND community_role = "KETUA" LIMIT 1', [comm.community_id]);
+            const [ketuas] = await db.query('SELECT user_id FROM community_members WHERE community_id = ? AND community_role = \'KETUA\' LIMIT 1', [comm.community_id]);
             if (ketuas.length > 0) {
                 const ketuaId = ketuas[0].user_id;
                 await db.query(
-                    'INSERT INTO messages (sender_id, receiver_id, subject, content, type) VALUES (?, ?, ?, ?, "NORMAL")',
+                    'INSERT INTO messages (sender_id, receiver_id, subject, content, type) VALUES (?, ?, ?, ?, \'NORMAL\')',
                     [userId, ketuaId, 'Pemberitahuan Pengunduran Diri Otomatis', 'Halo Ketua, saya mengundurkan diri dari komunitas ini karena saya telah menerima tawaran sebagai pengurus inti di komunitas lain.']
                 );
             }
@@ -118,7 +118,7 @@ const rejectPromotionOffer = async (req, res) => {
     const userId = req.user.id;
     
     try {
-        const [result] = await db.query('UPDATE messages SET is_actioned = TRUE, is_read = TRUE WHERE id = ? AND receiver_id = ? AND type = "PROMOTION_OFFER"', [messageId, userId]);
+        const [result] = await db.query('UPDATE messages SET is_actioned = TRUE, is_read = TRUE WHERE id = ? AND receiver_id = ? AND type = \'PROMOTION_OFFER\'', [messageId, userId]);
         if (result.affectedRows === 0) return res.status(404).json({ message: 'Pesan tidak valid' });
         
         res.status(200).json({ message: 'Penawaran ditolak' });
