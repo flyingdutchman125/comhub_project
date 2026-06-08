@@ -16,6 +16,7 @@ import { AttendancePage } from './pages/AttendancePage'
 import { ApprovalPage } from './pages/ApprovalPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { DashboardPage } from './pages/DashboardPage'
+import { ApiDocsPage } from './pages/ApiDocsPage'
 import { CreateCommunityModal } from './components/CreateCommunityModal'
 import { NewsFormModal } from './components/NewsFormModal'
 import { NewsDetailModal } from './components/NewsDetailModal'
@@ -321,6 +322,7 @@ function App() {
     }
 
     items.push({ label: 'Settings' })
+    items.push({ label: 'API Documentation' })
     return items
   }
 
@@ -431,6 +433,8 @@ function App() {
             <ApprovalPage token={token} userRole={user?.role} />
           ) : activeTab === 'Portofolio' ? (
             <PortfolioPage />
+          ) : activeTab === 'API Documentation' ? (
+            <ApiDocsPage />
           ) : activeTab === 'Settings' ? (
             <SettingsPage user={user} token={token} selectedCommunity={selectedCommunity} userRoleInSelected={userRoleInSelected} onProfileUpdated={() => window.location.reload()} />
           ) : activeTab !== 'Dashboard' ? (
